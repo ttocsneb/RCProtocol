@@ -1,5 +1,4 @@
 /*
- vim: tabstop=2
  vim: softtabstop=0
  vim: expandtab
  vim: shiftwidth=2
@@ -43,6 +42,8 @@ int8_t RemoteProtocol::pair() {
   //wait until data is available, if it takes too long, error lost connection
   if(_waitTillAvailable(RC_CONNECT_TIMEOUT) != 0) return RC_ERROR_LOST_CONNECTION;
 
+  _radio->read(&deviceId, sizeof(deviceId));
+
   //TODO Read settings from device
   
   
@@ -67,10 +68,11 @@ int8_t RemoteProtocol::connect() {
 
 
   //Send yes for now.
-  if(_forceSend(&_YES, sizeof(_YES), RC_CONNECT_TIMEOUT) != 0) return RC_ERROR_LOST_CONNECTION;
-
-
-
+  if(_forceSend(&_YES, sizeof(_YES), RC_CONNECT_TIMEOUT) != 0) {
+    return RC_ERROR_LOST_CONNECTION;
+  } else {
+    return 0;
+  }
 
   return 0;
 }
