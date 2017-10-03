@@ -37,8 +37,16 @@ class RemoteProtocol {
   public:
     RemoteProtocol(RF24 *tranceiver, uint8_t remoteId[]);
     void begin();
-    int8_t pair();
-    int8_t connect();
+    //The function pointer saves the settings from the device we have just paired with,
+    //it has two arguments:
+    //  uint8_t *id: a char array that will always be 5 characters long
+    //  uint8_t *settings: a char arrray that holds the settings
+    //  uint8_t settingsSize: the size of the settings array
+    int8_t pair(void (saveSettings)(uint8_t*, uint8_t*, uint8_t));
+    //The function pointer should check if the device has been paired, and if its required
+    //are present.
+    //  uint8_t *id: a char array that will always contain 5 characters.
+    int8_t connect(bool (*checkIfValid)(uint8_t*));
     int8_t update();
   private:
     const uint8_t _PAIR_ADDRESS[5] = {'P', 'a', 'i', 'r', '0'};
@@ -46,6 +54,7 @@ class RemoteProtocol {
     const uint8_t _NO = 'N';
 
     uint8_t *_remoteId;
+
     RF24 *_radio;
 
     int8_t _forceSend(void *buf, uint8_t size, long timeout);
