@@ -1,0 +1,40 @@
+#######################################
+# Syntax Coloring Map For ExampleLibrary
+#######################################
+
+#######################################
+# Datatypes (KEYWORD1)
+#######################################
+
+# Test	KEYWORD1
+
+#######################################
+# Methods and Functions (KEYWORD2)
+#######################################
+
+#doSomething	KEYWORD2
+
+begin KEYWORD2
+pair KEYWORD2
+connect KEYWORD2
+update KEYWORD2
+
+#######################################
+# Instances (KEYWORD2)
+#######################################
+
+DeviceProtocol KEYWORD2
+RemoteProtocol KEYWORD2
+
+#######################################
+# Constants (LITERAL1)
+#######################################
+
+RC_TIMEOUT LITERAL1
+RC_CONNECT_TIMEOUT LITERAL1
+
+RC_ERROR_LOST_CONNECTION LITERAL1
+RC_ERROR_TIMEOUT LITERAL1
+RC_ERROR_CONNECTION_REFUSED LITERAL1
+RC_ERROR_CONNECTION_BAD_DATA LITERAL1
+
