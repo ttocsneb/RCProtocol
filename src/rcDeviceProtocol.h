@@ -15,8 +15,12 @@
 #define __RCDEVICEPROTOCOL_H__
 
 #include "Arduino.h"
-#include "rcDeviceProtocol.h"
 #include "RF24.h"
+
+#ifndef __RF24_H__
+#error "rcDeviceProtocol Requires the tmrh20 RF24 Library: https://github.com/nRF24/RF24"
+#endif
+
 
 //Userdefined Constants
 
@@ -37,7 +41,7 @@
 
 class DeviceProtocol {
   public:
-    DeviceProtocol(RF24 *tranceiver, uint8_t deviceId[]);
+    DeviceProtocol(RF24 *tranceiver, const uint8_t deviceId[]);
     void begin();
     int8_t pair();
     int8_t connect(uint8_t remoteId[]);
@@ -48,7 +52,7 @@ class DeviceProtocol {
     const uint8_t _YES = 'Y';
     const uint8_t _NO = 'N';
 
-    uint8_t *_deviceId;
+    const uint8_t *_deviceId;
     RF24 *_radio;
 
     int8_t _forceSend(void *buf, uint8_t size, long timeout);

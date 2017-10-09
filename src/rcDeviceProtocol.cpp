@@ -10,7 +10,7 @@
 #include "RF24.h"
 
 
-DeviceProtocol::DeviceProtocol(RF24 *tranceiver, uint8_t deviceId[]) {
+DeviceProtocol::DeviceProtocol(RF24 *tranceiver, const uint8_t deviceId[]) {
   _radio = tranceiver;
   _deviceId = deviceId;
 }

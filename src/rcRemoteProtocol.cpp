@@ -10,7 +10,7 @@
 #include "rcRemoteProtocol.h"
 #include "RF24.h"
 
-RemoteProtocol::RemoteProtocol(RF24 *tranceiver, uint8_t remoteId[]) {
+RemoteProtocol::RemoteProtocol(RF24 *tranceiver, const uint8_t remoteId[]) {
   _radio = tranceiver;
   _remoteId = remoteId;
 

@@ -17,6 +17,11 @@
 #include "RF24.h"
 #include "Arduino.h"
 
+#ifndef __RF24_H__
+#error "rcRemoteProtocol Requires the tmrh20 RF24 Library: https://github.com/nRF24/RF24"
+#endif
+
+
 
 //Userdefined Constants
 
@@ -35,7 +40,7 @@
 
 class RemoteProtocol {
   public:
-    RemoteProtocol(RF24 *tranceiver, uint8_t remoteId[]);
+    RemoteProtocol(RF24 *tranceiver, const uint8_t remoteId[]);
     void begin();
     //The function pointer saves the settings from the device we have just paired with,
     //it has two arguments:
@@ -53,7 +58,7 @@ class RemoteProtocol {
     const uint8_t _YES = 'Y';
     const uint8_t _NO = 'N';
 
-    uint8_t *_remoteId;
+    const uint8_t *_remoteId;
 
     RF24 *_radio;
 
