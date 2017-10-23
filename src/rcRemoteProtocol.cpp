@@ -85,19 +85,20 @@ int8_t RemoteProtocol::connect(bool (checkIfValid)(uint8_t*)) {
 
 
   if(valid) {
-    if(_forceSend(&_YES, sizeof(_YES), RC_CONNECT_TIMEOUT) != 0) 
+    //The teensy 3.1 compiler requires &_YES(const uint8_t) to be explicitly cast to (uint8_t*)
+    if(_forceSend(const_cast<uint8_t*>(&_YES), sizeof(_YES), RC_CONNECT_TIMEOUT) != 0) 
       return RC_ERROR_LOST_CONNECTION;
   } else {
-    if(_forceSend(&_YES, sizeof(_NO), RC_CONNECT_TIMEOUT) != 0) 
+    if(_forceSend(const_cast<uint8_t*>(&_NO), sizeof(_NO), RC_CONNECT_TIMEOUT) != 0) 
       return RC_ERROR_LOST_CONNECTION;
   }
 
   return 0;
 }
 
-int8_t RemoteProtocol::_forceSend(void *buf, uint8_t size, long timeout) {
+int8_t RemoteProtocol::_forceSend(void *buf, uint8_t size, uint32_t timeout) {
   
-  long t = millis();
+  uint32_t t = millis();
   bool ack = false;
   while(!ack && millis()-t < timeout) {
     ack = _radio->write(&buf, size);
@@ -108,8 +109,8 @@ int8_t RemoteProtocol::_forceSend(void *buf, uint8_t size, long timeout) {
 }
 
 
-int8_t RemoteProtocol::_waitTillAvailable(long timeout) {
-  long t = millis();
+int8_t RemoteProtocol::_waitTillAvailable(uint32_t timeout) {
+  uint32_t t = millis();
   while(!_radio->available() && millis()-t < timeout) delay(16);
   if(millis()-t >= timeout) return -1;
 

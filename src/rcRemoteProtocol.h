@@ -62,8 +62,8 @@ class RemoteProtocol {
 
     RF24 *_radio;
 
-    int8_t _forceSend(void *buf, uint8_t size, long timeout);
-    int8_t _waitTillAvailable(long timeout);
+    int8_t _forceSend(void *buf, uint8_t size, uint32_t timeout);
+    int8_t _waitTillAvailable(uint32_t timeout);
 };
 
 #endif
