@@ -1,12 +1,4 @@
 /*
- vim: tabstop=2 
- vim: softtabstop=0
- vim: expandtab
- vim: shiftwidth=2
- vim: smarttab
-*/
-
-/*
    rcRemoteProtocol.h - Library for Remote for RCProtocol.
    Created by Benjamin Jacobs, October 1, 2017
 */
@@ -64,6 +56,7 @@ class RemoteProtocol {
 
     int8_t _forceSend(void *buf, uint8_t size, uint32_t timeout);
     int8_t _waitTillAvailable(uint32_t timeout);
+    void _flushBuffer();
 };
 
 #endif
