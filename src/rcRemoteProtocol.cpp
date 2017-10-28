@@ -101,7 +101,7 @@ int8_t RemoteProtocol::_forceSend(void *buf, uint8_t size, uint32_t timeout) {
   uint32_t t = millis();
   bool ack = false;
   while(!ack && millis()-t < timeout) {
-    ack = _radio->write(&buf, size);
+    ack = _radio->write(buf, size);
   }
   if(!ack) return -1;
 
