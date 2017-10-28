@@ -1,10 +1,3 @@
-/*
- vim: tabstop=2
- vim: expandtab
- vim: shiftwidth=2
- vim: smarttab
-*/
-
 #include "Arduino.h"
 #include "rcDeviceProtocol.h"
 #include "RF24.h"
@@ -24,7 +17,7 @@ void DeviceProtocol::begin() {
   _radio->stopListening();
 }
 
-int8_t DeviceProtocol::pair() {
+int8_t DeviceProtocol::pair(void (saveRemotID)(uint8_t*)) {
   _radio->openReadingPipe(1, _PAIR_ADDRESS);
   _radio->startListening();
 
@@ -77,23 +70,23 @@ int8_t DeviceProtocol::connect(uint8_t remoteId[]) {
 }
 
 int8_t DeviceProtocol::update() {
-
+  return 0;
 }
 
-int8_t DeviceProtocol::_forceSend(void *buf, uint8_t size, long timeout) {
+int8_t DeviceProtocol::_forceSend(void *buf, uint8_t size, unsigned long timeout) {
   
-  long t = millis();
+  unsigned long t = millis();
   bool ack = false;
   while(!ack && millis()-t < timeout) {
-    ack = _radio->write(&buf, size);
+    ack = _radio->write(buf, size);
   }
   if(!ack) return -1;
 
   return 0;
 }
 
-int8_t DeviceProtocol::_waitTillAvailable(long timeout) {
-  long t = millis();
+int8_t DeviceProtocol::_waitTillAvailable(unsigned long timeout) {
+  unsigned long t = millis();
   while(!_radio->available() && millis()-t < timeout) delay(16);
   if(millis()-t >= timeout) return -1;
 

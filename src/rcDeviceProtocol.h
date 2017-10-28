@@ -43,7 +43,7 @@ class DeviceProtocol {
   public:
     DeviceProtocol(RF24 *tranceiver, const uint8_t deviceId[]);
     void begin();
-    int8_t pair();
+    int8_t pair(void (saveRemotID)(uint8_t*));
     int8_t connect(uint8_t remoteId[]);
     int8_t update();
   private:
@@ -55,8 +55,8 @@ class DeviceProtocol {
     const uint8_t *_deviceId;
     RF24 *_radio;
 
-    int8_t _forceSend(void *buf, uint8_t size, long timeout);
-    int8_t _waitTillAvailable(long timeout);
+    int8_t _forceSend(void *buf, uint8_t size, unsigned long timeout);
+    int8_t _waitTillAvailable(unsigned long timeout);
 
 };
 
