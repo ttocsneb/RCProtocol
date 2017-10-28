@@ -17,24 +17,27 @@ void DeviceProtocol::begin() {
   _radio->stopListening();
 }
 
-int8_t DeviceProtocol::pair(void (saveRemotID)(uint8_t*)) {
+int8_t DeviceProtocol::pair(void (saveRemoteID)(uint8_t*)) {
   _radio->openReadingPipe(1, _PAIR_ADDRESS);
   _radio->startListening();
+
+  _clearBuffer();
 
   uint8_t radioId[5];
 
   //wait until data is available from the remote
   if(_waitTillAvailable(RC_TIMEOUT) != 0) return RC_ERROR_TIMEOUT;
   
-  _radio->read(&radioId, sizeof(radioId));
+  _radio->read(&radioId, 5);
 
   //write to the remote the device id
+  saveRemoteID(radioId);
 
   _radio->stopListening();
-  _radio->openWritingPipe(_PAIR_ADDRESS);
+  _radio->openWritingPipe(radioId);
   
   //Send the device id to the remote
-  if(_forceSend(&_deviceId, sizeof(_deviceId), RC_CONNECT_TIMEOUT) != 0) return RC_ERROR_LOST_CONNECTION;
+  if(_forceSend(const_cast<uint8_t*>(_deviceId), 5, RC_CONNECT_TIMEOUT) != 0) return RC_ERROR_LOST_CONNECTION;
 
   //TODO send settings for the device
 
@@ -91,4 +94,12 @@ int8_t DeviceProtocol::_waitTillAvailable(unsigned long timeout) {
   if(millis()-t >= timeout) return -1;
 
   return 0;
+}
+
+void DeviceProtocol::_clearBuffer() {
+  //read until there is no more data in the read buffer.
+  uint8_t tmp;
+  while(_radio->available()) {
+    _radio->read(&tmp, 1);
+  }
 }

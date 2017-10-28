@@ -57,6 +57,7 @@ class DeviceProtocol {
 
     int8_t _forceSend(void *buf, uint8_t size, unsigned long timeout);
     int8_t _waitTillAvailable(unsigned long timeout);
+    void _clearBuffer();
 
 };
 
