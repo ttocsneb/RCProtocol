@@ -43,7 +43,7 @@ class RemoteProtocol {
     //The function pointer should check if the device has been paired, and if its required
     //are present.
     //  uint8_t *id: a char array that will always contain 5 characters.
-    int8_t connect(bool (*checkIfValid)(uint8_t*));
+    int8_t connect(bool (checkIfValid)(uint8_t*));
     int8_t update();
   private:
     const uint8_t _PAIR_ADDRESS[5] = {'P', 'a', 'i', 'r', '0'};

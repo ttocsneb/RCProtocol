@@ -2,6 +2,8 @@
 #include "rcRemoteProtocol.h"
 #include "RF24.h"
 
+#define _ID_SIZE 5
+
 RemoteProtocol::RemoteProtocol(RF24 *tranceiver, const uint8_t remoteId[]) {
   _radio = tranceiver;
   _remoteId = remoteId;
@@ -24,10 +26,10 @@ int8_t RemoteProtocol::pair(void (*saveSettings)(uint8_t*, uint8_t*, uint8_t)) {
 
   _flushBuffer();
   
-  uint8_t deviceId[5];
+  uint8_t deviceId[_ID_SIZE];
 
   //Send the remote's id until a receiver has acknowledged
-  if(_forceSend(const_cast<uint8_t*>(_remoteId), 5, RC_TIMEOUT) != 0) return RC_ERROR_TIMEOUT;
+  if(_forceSend(const_cast<uint8_t*>(_remoteId), _ID_SIZE, RC_TIMEOUT) != 0) return RC_ERROR_TIMEOUT;
 
   for(int i=0; i<5; i++) {
     Serial.write(_remoteId[i]);
@@ -40,7 +42,7 @@ int8_t RemoteProtocol::pair(void (*saveSettings)(uint8_t*, uint8_t*, uint8_t)) {
   //wait until data is available, if it takes too long, error lost connection
   if(_waitTillAvailable(RC_CONNECT_TIMEOUT) != 0) return RC_ERROR_LOST_CONNECTION;
 
-  _radio->read(&deviceId, 5);
+  _radio->read(&deviceId, _ID_SIZE);
 
   //Read the settings from the device
 
@@ -69,13 +71,12 @@ int8_t RemoteProtocol::connect(bool (checkIfValid)(uint8_t*)) {
   _radio->openReadingPipe(1, _remoteId); 
   _radio->startListening();
   
-  long t = millis();
-  while(!_radio->available() && millis()-t < RC_TIMEOUT) delay(16);
-  if(millis()-t >= RC_TIMEOUT) return RC_ERROR_TIMEOUT;
+  if(_waitTillAvailable(RC_TIMEOUT) != 0) return RC_ERROR_TIMEOUT;
 
   //Check if the required add-ons are present
-  uint8_t deviceId[5];
-  _radio->read(&deviceId, sizeof(deviceId));
+  uint8_t deviceId[_ID_SIZE];
+
+  _radio->read(&deviceId, _ID_SIZE);
 
   bool valid = checkIfValid(deviceId);
 
@@ -86,11 +87,10 @@ int8_t RemoteProtocol::connect(bool (checkIfValid)(uint8_t*)) {
 
 
   if(valid) {
-    //The teensy 3.1 compiler requires &_YES(const uint8_t) to be explicitly cast to (uint8_t*)
-    if(_forceSend(const_cast<uint8_t*>(&_YES), sizeof(_YES), RC_CONNECT_TIMEOUT) != 0) 
+    if(_forceSend(const_cast<uint8_t*>(&_YES), 1, RC_CONNECT_TIMEOUT) != 0) 
       return RC_ERROR_LOST_CONNECTION;
   } else {
-    if(_forceSend(const_cast<uint8_t*>(&_NO), sizeof(_NO), RC_CONNECT_TIMEOUT) != 0) 
+    if(_forceSend(const_cast<uint8_t*>(&_NO), 1, RC_CONNECT_TIMEOUT) != 0) 
       return RC_ERROR_LOST_CONNECTION;
   }
 
