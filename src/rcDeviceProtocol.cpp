@@ -50,7 +50,7 @@ int8_t DeviceProtocol::connect(uint8_t remoteId[]) {
   _radio->openWritingPipe(remoteId);
 
   //send the device id to the remote, this announces who we are.
-  if(_forceSend(&_deviceId, sizeof(_deviceId), RC_TIMEOUT) != 0) return RC_ERROR_TIMEOUT;
+  if(_forceSend(const_cast<uint8_t*>(_deviceId), 5, RC_TIMEOUT) != 0) return RC_ERROR_TIMEOUT;
 
   _radio->openReadingPipe(1, remoteId);
   _radio->startListening();
@@ -60,7 +60,7 @@ int8_t DeviceProtocol::connect(uint8_t remoteId[]) {
   
   uint8_t connectSuccess = 0;
 
-  _radio->read(&connectSuccess, sizeof(connectSuccess));
+  _radio->read(&connectSuccess, 1);
 
   //check if the connection was successful
   if(connectSuccess == _NO) {
