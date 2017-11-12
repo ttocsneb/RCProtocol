@@ -7,20 +7,24 @@
 RemoteProtocol::RemoteProtocol(RF24 *tranceiver, const uint8_t remoteId[]) {
   _radio = tranceiver;
   _remoteId = remoteId;
-
-
 }
 
 void RemoteProtocol::begin() { 
   _radio->begin();
-  _radio->enableDynamicPayloads();
-  _radio->setDataRate(RF24_250KBPS);
 
   _radio->setRetries(15, 15);
   _radio->stopListening();
 }
 
-int8_t RemoteProtocol::pair(void (*saveSettings)(uint8_t*, uint8_t*, uint8_t)) {
+int8_t RemoteProtocol::pair(void (*saveSettings)(const uint8_t*, const uint8_t*)) {
+  _radio->disableDynamicPayloads();
+  _radio->setAutoAck(true);
+  _radio->setDataRate(RF24_1MBPS);
+  _radio->setPayloadSize(32);
+  _radio->setPALevel(RF24_PA_MIN);
+  _radio->setChannel(63);
+
+
   _radio->stopListening();
   _radio->openWritingPipe(_PAIR_ADDRESS);
 
@@ -44,21 +48,17 @@ int8_t RemoteProtocol::pair(void (*saveSettings)(uint8_t*, uint8_t*, uint8_t)) {
 
   _radio->read(&deviceId, _ID_SIZE);
 
-  //Read the settings from the device
+  uint8_t settings[32];
+  
+  //wait until data is available, if it takes too long, error lost connection
+  if(_waitTillAvailable(RC_CONNECT_TIMEOUT) != 0) return RC_ERROR_LOST_CONNECTION;
 
-  uint8_t i = 0;
-  uint8_t deviceSettings[32];//32 is the maximum size of a transmission
-
-  /*
-  //Read the settings to deviceSettings, and get the size.
-  while(_radio->available() && i<32) {
-    _radio->read(&deviceSettings[i], 1);
-    i++;
-  }
+  //Read the settings to settings
+  _radio->read(settings, 32);
 
   //Save settings
-  */
-  saveSettings(deviceId, deviceSettings, i);
+  
+  saveSettings(deviceId, settings);
 
 
   _radio->stopListening();
@@ -66,7 +66,13 @@ int8_t RemoteProtocol::pair(void (*saveSettings)(uint8_t*, uint8_t*, uint8_t)) {
   return 0;
 }
 
-int8_t RemoteProtocol::connect(bool (checkIfValid)(uint8_t*)) {
+int8_t RemoteProtocol::connect(bool (checkIfValid)(const uint8_t*, uint8_t*)) {
+  _radio->disableDynamicPayloads();
+  _radio->setAutoAck(true);
+  _radio->setDataRate(RF24_1MBPS);
+  _radio->setPayloadSize(32);
+  _radio->setPALevel(RF24_PA_MIN);
+  _radio->setChannel(63);
 
   _radio->openReadingPipe(1, _remoteId); 
   _radio->startListening();
@@ -78,21 +84,56 @@ int8_t RemoteProtocol::connect(bool (checkIfValid)(uint8_t*)) {
 
   _radio->read(&deviceId, _ID_SIZE);
 
-  bool valid = checkIfValid(deviceId);
+  bool valid = checkIfValid(deviceId, _settings);
 
   //Send yes or no, if we can connect
 
   _radio->stopListening();
   _radio->openWritingPipe(_remoteId);
 
+  delay(200);
 
   if(valid) {
-    if(_forceSend(const_cast<uint8_t*>(&_YES), 1, RC_CONNECT_TIMEOUT) != 0) 
+    if(_radio->write(const_cast<uint8_t*>(&_YES), 1) == false) 
       return RC_ERROR_LOST_CONNECTION;
   } else {
-    if(_forceSend(const_cast<uint8_t*>(&_NO), 1, RC_CONNECT_TIMEOUT) != 0) 
+    if(_radio->write(const_cast<uint8_t*>(&_NO), 1) == false) 
       return RC_ERROR_LOST_CONNECTION;
   }
+  
+  //Set the radio settings
+
+  _radio->setPALevel(RF24_PA_HIGH);
+
+  if(GET_ENABLE_DYNAMIC_PAYLOAD(_settings[SET_BOOLS]) == true) {
+    _radio->enableDynamicPayloads();
+  } else {
+    _radio->disableDynamicPayloads();
+    _radio->setPayloadSize(_settings[SET_PAYLOAD_SIZE]);
+  }
+
+  _radio->setAutoAck(GET_ENABLE_ACK(_settings[SET_BOOLS]));
+  if(GET_ENABLE_ACK(_settings[SET_BOOLS]) && GET_ENABLE_ACK_PAYLOAD(_settings[SET_BOOLS])) {
+    _radio->enableAckPayload();
+  }
+
+  _radio->setChannel(_settings[SET_START_CHANNEL]);
+
+  switch(_settings[SET_DATA_RATE]) {
+  case RF24_250KBPS:
+    _radio->setDataRate(RF24_250KBPS);
+    break;
+  case RF24_2MBPS:
+    _radio->setDataRate(RF24_2MBPS);
+    break;
+  case RF24_1MBPS:
+  default:
+    _radio->setDataRate(RF24_1MBPS);
+  }
+
+  delay(200);
+
+  if(_forceSend(const_cast<uint8_t*>(&_TEST), 1, RC_CONNECT_TIMEOUT) != 0) return RC_ERROR_BAD_DATA;
 
   return 0;
 }
