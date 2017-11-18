@@ -16,7 +16,7 @@ void RemoteProtocol::begin() {
   _radio->stopListening();
 }
 
-int8_t RemoteProtocol::pair(void (*saveSettings)(const uint8_t*, const uint8_t*)) {
+int8_t RemoteProtocol::pair(RemoteProtocol::saveSettings saveSettings) {
   _radio->disableDynamicPayloads();
   _radio->setAutoAck(true);
   _radio->setDataRate(RF24_1MBPS);
@@ -66,7 +66,7 @@ int8_t RemoteProtocol::pair(void (*saveSettings)(const uint8_t*, const uint8_t*)
   return 0;
 }
 
-int8_t RemoteProtocol::connect(bool (checkIfValid)(const uint8_t*, uint8_t*)) {
+int8_t RemoteProtocol::connect(RemoteProtocol::checkIfValid checkIfValid) {
   _radio->disableDynamicPayloads();
   _radio->setAutoAck(true);
   _radio->setDataRate(RF24_1MBPS);

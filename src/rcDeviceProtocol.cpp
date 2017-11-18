@@ -17,7 +17,7 @@ void DeviceProtocol::begin(const uint8_t* settings) {
   _radio->stopListening();
 }
 
-int8_t DeviceProtocol::pair(void (saveRemoteID)(uint8_t*)) {
+int8_t DeviceProtocol::pair(DeviceProtocol::saveRemoteID saveRemoteID) {
   _radio->setAutoAck(true);
   _radio->setDataRate(RF24_1MBPS);
   _radio->setPayloadSize(32);
@@ -118,19 +118,19 @@ int8_t DeviceProtocol::connect(uint8_t remoteId[]) {
 
     _radio->startListening();
 
-    if(_waitTillAvailable(RC_CONNECT_TIMEOUT) != 0) return RC_ERROR_CONNECTION_BAD_DATA;
+    if(_waitTillAvailable(RC_CONNECT_TIMEOUT) != 0) return RC_ERROR_BAD_DATA;
 
     uint8_t test = 0;
 
     _radio->read(&test, 1);
 
-    if(test != _TEST) return RC_ERROR_CONNECTION_BAD_DATA;
+    if(test != _TEST) return RC_ERROR_BAD_DATA;
     
 
     return 0;
   }
 
-  return RC_ERROR_CONNECTION_BAD_DATA;
+  return RC_ERROR_BAD_DATA;
 }
 
 int8_t DeviceProtocol::update() {
