@@ -181,6 +181,8 @@ private:
   int8_t _forceSend(void *buf, uint8_t size, uint32_t timeout);
   int8_t _waitTillAvailable(uint32_t timeout);
   void _flushBuffer();
+
+  void _applySettings();
 };
 
 #endif
