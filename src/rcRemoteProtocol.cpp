@@ -67,6 +67,7 @@ int8_t RemoteProtocol::pair(RemoteProtocol::saveSettings saveSettings) {
 
 int8_t RemoteProtocol::connect(RemoteProtocol::checkIfValid checkIfValid) {
   uint8_t deviceId[_ID_SIZE];
+  uint8_t settings[32];
   bool valid = false;
 
   //Set Connect settings
@@ -90,7 +91,8 @@ int8_t RemoteProtocol::connect(RemoteProtocol::checkIfValid checkIfValid) {
   _radio->read(&deviceId, _ID_SIZE);
 
   //Check if we can pair with the device
-  valid = checkIfValid(deviceId, _settings);
+  valid = checkIfValid(deviceId, settings);
+  _settings.setSettings(settings);
 
   //Start Writing
   _radio->stopListening();
@@ -106,6 +108,7 @@ int8_t RemoteProtocol::connect(RemoteProtocol::checkIfValid checkIfValid) {
   } else {
     if(_radio->write(const_cast<uint8_t*>(&_NO), 1) == false) 
       return RC_ERROR_LOST_CONNECTION;
+    return RC_ERROR_CONNECTION_REFUSED;
   }
   
   //Set the radio settings
@@ -118,6 +121,10 @@ int8_t RemoteProtocol::connect(RemoteProtocol::checkIfValid checkIfValid) {
   //NOTE: I haven't tested what would happen if auto-ack is disabled.
   if(_forceSend(const_cast<uint8_t*>(&_TEST), 1, RC_CONNECT_TIMEOUT) != 0) return RC_ERROR_BAD_DATA;
 
+  return 0;
+}
+
+int8_t RemoteProtocol::update() {
   return 0;
 }
 
@@ -146,34 +153,24 @@ void RemoteProtocol::_applySettings() {
   _radio->setPALevel(RF24_PA_HIGH);
 
   //Enable/disable Dynamic Payloads, and set payload size
-  if(GET_ENABLE_DYNAMIC_PAYLOAD(_settings[SET_BOOLS]) == true) {
+  if(_settings.getEnableDynamicPayload()) {
     _radio->enableDynamicPayloads();
   } else {
     _radio->disableDynamicPayloads();
-    _radio->setPayloadSize(_settings[SET_PAYLOAD_SIZE]);
+    _radio->setPayloadSize(_settings.getPayloadSize());
   }
 
   //Enable/Disable autoack, and custom payloads.
-  _radio->setAutoAck(GET_ENABLE_ACK(_settings[SET_BOOLS]));
-  if(GET_ENABLE_ACK(_settings[SET_BOOLS]) && GET_ENABLE_ACK_PAYLOAD(_settings[SET_BOOLS])) {
+  _radio->setAutoAck(_settings.getEnableAck());
+  if(_settings.getEnableAck() && _settings.getEnableAckPayload()) {
     _radio->enableAckPayload();
   }
 
   //Set the channel
-  _radio->setChannel(_settings[SET_START_CHANNEL]);
+  _radio->setChannel(_settings.getStartChannel());
 
   //Set the data rate
-  switch(_settings[SET_DATA_RATE]) {
-  case RF24_250KBPS:
-    _radio->setDataRate(RF24_250KBPS);
-    break;
-  case RF24_2MBPS:
-    _radio->setDataRate(RF24_2MBPS);
-    break;
-  case RF24_1MBPS:
-  default:
-    _radio->setDataRate(RF24_1MBPS);
-  }
+  _radio->setDataRate(_settings.getDataRate());
 }
 
 void RemoteProtocol::_flushBuffer() {

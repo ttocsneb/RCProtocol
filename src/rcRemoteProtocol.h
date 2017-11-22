@@ -6,8 +6,10 @@
 #ifndef __RCREMOTEPROTOCOL_H__
 #define __RCREMOTEPROTOCOL_H__
 
-#include "Arduino.h"
-#include "RF24.h"
+#include <Arduino.h>
+#include <RF24.h>
+
+#include "rcSettings.h"
 
 #ifndef __RF24_H__
 #error "rcRemoteProtocol Requires the tmrh20 RF24 Library: https://github.com/nRF24/RF24"
@@ -38,49 +40,10 @@
  * Data that was received does not match expectations
  */
 #define RC_ERROR_BAD_DATA -3
-
-
-/** 
- * Settings positions
- *
- * The settings have a specific structure to them, these definitions are used
- * to organize them
- */ 
-
-/** 
- * SET_BOOLS
- * 
- * The first byte of settings contain several booleans:
- * - ENABLE_DYNAMIC_PAYLOAD
- * - ENABLE_ACK
- * - ENABLE_ACK_PAYLOAD
- */ 
-#define SET_BOOLS 0
-#define SET_ENABLE_DYNAMIC_PAYLOAD(x, y) (x==true?(y|1):(y&(~1)))
-#define GET_ENABLE_DYNAMIC_PAYLOAD(x) (x&1)
-#define SET_ENABLE_ACK(x, y) (x==true?(y|2):(y&(~2)))
-#define GET_ENABLE_ACK(x) ((x>>1)&1)
-#define SET_ENABLE_ACK_PAYLOAD(x, y) (x==true?(y|4):(y&(~4)))
-#define GET_ENABLE_ACK_PAYLOAD(x) ((x>>2)&1)
-
-/** 
- * SET_START_CHANNEL
- * 
- * The starting channel, a number between 0 and 127
- */
-#define SET_START_CHANNEL 1
 /**
- * SET_DATA_RATE
- * 
- * The Data rate, using enum values from rf24_datarate_e
+ * Receiver was refused to connect
  */
-#define SET_DATA_RATE 2
-/**
- * SET_PAYLOAD_SIZE
- * 
- * The size of the payload usually 32 or less
- */
-#define SET_PAYLOAD_SIZE 3
+#define RC_ERROR_CONNECTION_REFUSED -4
 
 /**
  * Communication Protocol for transmitters
@@ -145,6 +108,10 @@ public:
    * @note The receiver you are trying to pair with should also be in pair mode
    * 
    * @param saveSettings A function pointer to save the settings of the paired device.
+   * 
+   * @return 0 if successful
+   * @return #RC_ERROR_TIMEOUT if no receiver was found.
+   * @return #RC_ERROR_LOST_CONNECTION if receiver stoped replying
    */
   int8_t pair(saveSettings saveSettings);
 
@@ -155,6 +122,12 @@ public:
    * 
    * @param checkIfValid A function pointer to check if the found device has been paired, and to
    * load the settings
+   * 
+   * @return 0 if successful
+   * @return #RC_ERROR_TIMEOUT if no receiver was found.
+   * @return #RC_ERROR_LOST_CONNECTION if receiver stopped replying
+   * @return #RC_ERROR_CONNECTION_REFUSED if the receiver is not on the pair list.
+   * @return #RC_ERROR_BAD_DATA if the settings are not set properly on both devices
    */
   int8_t connect(checkIfValid checkIfValid);
 
@@ -174,7 +147,7 @@ private:
 
 
   const uint8_t *_remoteId;
-  uint8_t _settings[32];
+  RCSettings _settings;
 
   RF24 *_radio;
 
