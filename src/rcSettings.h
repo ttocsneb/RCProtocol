@@ -113,7 +113,8 @@ public:
    * 
    * Default: RF24_1MBPS
    * 
-   * @param datarate see [rf24_datarate_e](http://tmrh20.github.io/RF24/RF24_8h.html#a82745de4aa1251b7561564b3ed1d6522)
+   * @param datarate see 
+   * [rf24_datarate_e](http://tmrh20.github.io/RF24/RF24_8h.html#a82745de4aa1251b7561564b3ed1d6522)
    */
   void setDataRate(rf24_datarate_e datarate);
   /**
@@ -181,8 +182,46 @@ public:
   void setCommsFrequency(uint8_t frequency);
   /**
    * Get the currently set value from setCommsFrequency()
+   * 
+   * @return frequency
    */
   uint8_t getCommsFrequency();
+
+  /**
+   * Retry Delay
+   * 
+   * Set the time before the transmission is resent.
+   * 
+   * @note The shorter the delay, the smaller the ack packet can be.
+   * see the table below for more information
+   * 
+   * (x): time value
+   * 
+   * | DataRate | Min Time for Full Packet | Ack Size at 250 us (0)                |
+   * | -------- | ------------------------ | ------------------------------------- |
+   * | 2MBPS    | 500 us (1)               | 15 bytes                              |
+   * | 1MBPS    | 500 us (1)               | 5 bytes                               |
+   * | 250KBPS  | 1500 us (5)              | None (500us (1) min for empty packet) |
+   * 
+   * Uses `0b00001111` of byte 4 
+   * 
+   * Default: 15
+   * 
+   * @param time How long to wait between each retry, in multiples of 250us, max is 15. 0 means
+   * 250us, 15 means 4000us.
+   */
+  void setRetryDelay(uint8_t time);
+  /**
+   * Get the currently set value from setRetryDelay()
+   * 
+   * @return retryDelay
+   */
+  uint8_t getRetryDelay();
+
+  /**
+   * Print the settings to Serial.
+   */
+  void printSettings();
 
 private:
   uint8_t _settings[32];

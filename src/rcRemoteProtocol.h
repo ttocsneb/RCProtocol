@@ -147,7 +147,10 @@ private:
 
 
   const uint8_t *_remoteId;
+  uint8_t _deviceId[5];
+
   RCSettings _settings;
+  RCSettings _pairSettings;
 
   RF24 *_radio;
 
@@ -155,7 +158,7 @@ private:
   int8_t _waitTillAvailable(uint32_t timeout);
   void _flushBuffer();
 
-  void _applySettings();
+  void _applySettings(RCSettings *settings);
 };
 
 #endif

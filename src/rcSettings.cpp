@@ -10,6 +10,7 @@ RCSettings::RCSettings() {
     setDataRate(RF24_1MBPS);
     setPayloadSize(32);
     setCommsFrequency(60);
+    setRetryDelay(15);
 }
 
 void RCSettings::setSettings(const uint8_t* settings) {
@@ -93,4 +94,49 @@ void RCSettings::setCommsFrequency(uint8_t frequency) {
 
 uint8_t RCSettings::getCommsFrequency() {
     return _settings[3];
+}
+
+void RCSettings::setRetryDelay(uint8_t time) {
+    //Put Retry Delay in bits 0 through 3 of byte 4
+    //0b00001111: 15
+    _settings[4] = (_settings[4] & (~15)) | (time & 15);
+}
+
+uint8_t RCSettings::getRetryDelay() {
+    return _settings[4] & 15;
+}
+
+void RCSettings::printSettings() {
+    Serial.print("Dyn Load: ");
+    Serial.println(getEnableDynamicPayload() ? "True" : "False");
+
+    Serial.print("Ack: ");
+    Serial.println(getEnableAck() ? "True" : "False");
+
+    Serial.print("Ack Load: ");
+    Serial.println(getEnableAckPayload() ? "True" : "False");
+
+    Serial.print("DataRate: ");
+    Serial.println(getDataRate() == RF24_1MBPS ? "1MBPS" : 
+        (getDataRate() == RF24_250KBPS ? "250MBPS" : "2MBPS"));
+
+    Serial.print("Channel: ");
+    Serial.println(getStartChannel());
+
+    Serial.print("Payload SIze: ");
+    Serial.println(getPayloadSize());
+
+    Serial.print("Frequency: ");
+    Serial.println(getCommsFrequency());
+
+    Serial.print("Retry Delay: ");
+    Serial.println(getRetryDelay());
+
+    Serial.println("Array:");
+    for(int i=0; i<5; i++) {
+        Serial.print("  ");
+        Serial.print(i);
+        Serial.print(": ");
+        Serial.println(_settings[i]);
+    }
 }

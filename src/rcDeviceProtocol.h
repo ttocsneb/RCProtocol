@@ -127,6 +127,8 @@ private:
   const uint8_t _TEST = 0x2; //Start Of Text
 
   RCSettings *_settings;
+  RCSettings _pairSettings;
+
   const uint8_t *_deviceId;
   RF24 *_radio;
 
@@ -134,7 +136,7 @@ private:
   int8_t _waitTillAvailable(unsigned long timeout);
   void _flushBuffer();
 
-  void _applySettings();
+  void _applySettings(RCSettings *settings);
 
 };
 
