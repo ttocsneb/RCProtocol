@@ -96,6 +96,13 @@ public:
   int8_t pair(saveRemoteID saveRemoteID);
 
   /**
+   * Check if the receiver is connected with a transmitter.
+   * 
+   * @return true when connected.
+   */
+  bool isConnected();
+
+  /**
    * Attempt to pair with a transmitter
    * 
    * @note The transmitter you are trying to connect with should also be in connect mode, 
@@ -129,8 +136,11 @@ private:
   RCSettings *_settings;
   RCSettings _pairSettings;
 
-  const uint8_t *_deviceId;
   RF24 *_radio;
+
+  const uint8_t *_deviceId;
+  uint8_t _remoteId[5];
+  bool _isConnected;
 
   int8_t _forceSend(void *buf, uint8_t size, unsigned long timeout);
   int8_t _waitTillAvailable(unsigned long timeout);

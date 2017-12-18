@@ -10,6 +10,12 @@
 #define _PAIR_CHANNEL 63
 
 DeviceProtocol::DeviceProtocol(RF24 *tranceiver, const uint8_t deviceId[]) {
+  _isConnected = false;
+
+  for(uint8_t i = 0; i < _ID_SIZE; i++) {
+    _remoteId[i] = 0;
+  }
+
   _radio = tranceiver;
   _deviceId = deviceId;
 
@@ -86,6 +92,8 @@ int8_t DeviceProtocol::connect(uint8_t remoteId[]) {
   uint8_t connectSuccess = 0;
   uint8_t test = 0;
 
+  //reset connected because if we fail connecting, we will not be connected to anything.
+  _isConnected = false;
   
   _radio->setPALevel(RF24_PA_LOW);
 
@@ -177,7 +185,18 @@ int8_t DeviceProtocol::connect(uint8_t remoteId[]) {
 
   }
 
+  //We passed all of the tests, so we are connected.
+  _isConnected = true;
+
+  for(uint8_t i = 0; i < _ID_SIZE; i++) {
+    _remoteId[i] = remoteId[i];
+  }
+
   return 0;
+}
+
+bool DeviceProtocol::isConnected() {
+  return _isConnected;
 }
 
 int8_t DeviceProtocol::update() {

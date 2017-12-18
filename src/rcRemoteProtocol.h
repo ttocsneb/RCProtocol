@@ -130,6 +130,13 @@ public:
    * @return #RC_ERROR_BAD_DATA if the settings are not set properly on both devices
    */
   int8_t connect(checkIfValid checkIfValid);
+  
+  /**
+   * Check if the transmitter is connected with a receiver.
+   * 
+   * @return true when connected.
+   */
+  bool isConnected();
 
   /**
    * Update the communications with the currently connected device
@@ -148,6 +155,7 @@ private:
 
   const uint8_t *_remoteId;
   uint8_t _deviceId[5];
+  bool _isConnected;
 
   RCSettings _settings;
   RCSettings _pairSettings;

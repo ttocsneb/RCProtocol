@@ -12,6 +12,13 @@
 #define _PAIR_CHANNEL 63
 
 RemoteProtocol::RemoteProtocol(RF24 *tranceiver, const uint8_t remoteId[]) {
+  //initialize all primitive variables
+  _isConnected = false;
+
+  for(uint8_t i = 0; i < _ID_SIZE; i++) {
+    _deviceId[i] = 0;
+  }
+
   _radio = tranceiver;
   _remoteId = remoteId;
 
@@ -29,6 +36,7 @@ void RemoteProtocol::begin() {
   _radio->begin();
 
   _radio->stopListening();
+
 }
 
 int8_t RemoteProtocol::pair(RemoteProtocol::saveSettings saveSettings) {
@@ -78,6 +86,9 @@ int8_t RemoteProtocol::connect(RemoteProtocol::checkIfValid checkIfValid) {
   uint8_t settings[32];
   uint8_t testData = 0;
   bool valid = false;
+
+  //reset connected because if we fail connecting, we will not be connected to anything.
+  _isConnected = false;
 
   //Set the PA level to low since the two devices will be close to eachother
   _radio->setPALevel(RF24_PA_LOW);
@@ -164,7 +175,14 @@ int8_t RemoteProtocol::connect(RemoteProtocol::checkIfValid checkIfValid) {
     _radio->stopListening();
   }
 
+  //We passed all of the tests, so we are connected.
+  _isConnected = true;
+
   return 0;
+}
+
+bool RemoteProtocol::isConnected() {
+  return _isConnected;
 }
 
 int8_t RemoteProtocol::update() {
