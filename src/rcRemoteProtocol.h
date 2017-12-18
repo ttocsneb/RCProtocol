@@ -31,19 +31,32 @@
 /**
  * Communications have been established, but since lost it
  */
-#define RC_ERROR_LOST_CONNECTION -1
+#define RC_ERROR_LOST_CONNECTION -101
 /**
  * No connection has been made
  */
-#define RC_ERROR_TIMEOUT -2
+#define RC_ERROR_TIMEOUT -102
 /**
  * Data that was received does not match expectations
  */
-#define RC_ERROR_BAD_DATA -3
+#define RC_ERROR_BAD_DATA -103
 /**
  * Receiver was refused to connect
  */
-#define RC_ERROR_CONNECTION_REFUSED -4
+#define RC_ERROR_CONNECTION_REFUSED -104
+/**
+ * Transmitter is not connected, so the function could not operate properly
+ */
+#define RC_ERROR_NOT_CONNECTED -201
+/**
+ * Packet did not get to receiver
+ */
+#define RC_ERROR_PACKET_NOT_SENT -202
+/**
+ * Expected ack payload, but got a regular ack instead
+ */
+#define RC_INFO_NO_ACK_PAYLOAD 201
+
 
 /**
  * Communication Protocol for transmitters
@@ -161,6 +174,21 @@ private:
   RCSettings _pairSettings;
 
   RF24 *_radio;
+
+  /**
+   * Send a packet to the receiver
+   * 
+   * When a packet is received, it will set returnData with the received data
+   * 
+   * @param data RCSettings.getPayloadSize() byte array to send
+   * @param returnData RCSettings.getPayloadSize() byte array to receive
+   * 
+   * @return >= 0 if successfull
+   * @return #RC_INFO_NO_ACK_PAYLOAD
+   * @return #RC_ERROR_PACKET_NOT_SENT
+   * @return #RC_ERROR_NOT_CONNECTED
+   */
+  int8_t _sendPacket(uint8_t* data, uint8_t* returnData);
 
   int8_t _forceSend(void *buf, uint8_t size, uint32_t timeout);
   int8_t _waitTillAvailable(uint32_t timeout);

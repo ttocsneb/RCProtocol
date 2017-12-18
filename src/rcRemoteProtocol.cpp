@@ -185,6 +185,31 @@ bool RemoteProtocol::isConnected() {
   return _isConnected;
 }
 
+int8_t RemoteProtocol::_sendPacket(uint8_t* data, uint8_t* returnData) {
+  if(isConnected()) {
+
+    //send data
+    if(_radio->write(data, _settings.getPayloadSize())) {
+
+      //Check if a payload was sent back.
+      if(_radio->isAckPayloadAvailable()) {
+        //set returnData to whatever was sent back
+        _radio->read(returnData, _settigns.getPayloadSize());
+      } else if(_settings.getEnableAckPayload()) {
+        //We were expecting a payload, but did not get one
+        return RC_INFO_NO_ACK_PAYLOAD;
+      }
+    } else if(_settings.getEnableAck()) {
+      //We were expecting at least an ack, but did not get one
+      return RC_ERROR_PACKET_NOT_SENT;
+    }
+
+    return 0;
+  } else {
+    return RC_ERROR_NOT_CONNECTED;
+  }
+}
+
 int8_t RemoteProtocol::update() {
   return 0;
 }
