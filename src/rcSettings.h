@@ -149,7 +149,7 @@ public:
    * 
    * Set the size of the payload in bytes
    * 
-   * Normally this isn't set higher than 32
+   * @note This can't be set higher than 32
    * 
    * Uses byte 2
    * 
@@ -217,6 +217,50 @@ public:
    * @return retryDelay
    */
   uint8_t getRetryDelay();
+
+  /**
+   * Number of channels in a packet
+   * 
+   * Set the number of channels in a packet, each channel uses 3 nybbles by 
+   * default, so a 32 byte packet can hold up to 20 channels.
+   * 
+   * In the future, I may support multi-packet transmissions to allow more 
+   * large channels.
+   * 
+   * Uses `0b00011111` of byte 5
+   * 
+   * Default: 6
+   * 
+   * @param numChannels number of channels to send (1 to 32)
+   */
+  void setNumChannels(uint8_t numChannels);
+  /**
+   * Get the currently set value from setNumChannels()
+   * 
+   * @return numChannels
+   */
+  uint8_t getNumChannels();
+
+  /**
+   * Number of bytes per channel
+   * 
+   * Set the size of each channel (nybbles (half-byte)).  The max value 
+   * would be calculated by `2^(channelSize * 4) - 1` So a value of 2 
+   * would be 1 byte or a max of 255.
+   * 
+   * Uses `0b11100000` of byte 5
+   * 
+   * default: 3
+   * 
+   * @param channelSize nybbles (half-bytes) (1 to 8)
+   */
+  void setChannelSize(uint8_t channelSize);
+  /**
+   * Get the currently set value from setChannelSize()
+   * 
+   * @return ChannelSize
+   */
+  uint8_t getChannelSize();
 
   /**
    * Print the settings to Serial.

@@ -19,6 +19,8 @@ RemoteProtocol::RemoteProtocol(RF24 *tranceiver, const uint8_t remoteId[]) {
     _deviceId[i] = 0;
   }
 
+  _timer = millis();
+
   _radio = tranceiver;
   _remoteId = remoteId;
 
@@ -177,6 +179,8 @@ int8_t RemoteProtocol::connect(RemoteProtocol::checkIfValid checkIfValid) {
 
   //We passed all of the tests, so we are connected.
   _isConnected = true;
+  //set timer delay as a variable once so it doesn't need to be recalculated every update
+  _timerDelay = round(1000.0 / _settings.getCommsFrequency());
 
   return 0;
 }
@@ -194,7 +198,7 @@ int8_t RemoteProtocol::_sendPacket(uint8_t* data, uint8_t* returnData) {
       //Check if a payload was sent back.
       if(_radio->isAckPayloadAvailable()) {
         //set returnData to whatever was sent back
-        _radio->read(returnData, _settigns.getPayloadSize());
+        _radio->read(returnData, _settings.getPayloadSize());
       } else if(_settings.getEnableAckPayload()) {
         //We were expecting a payload, but did not get one
         return RC_INFO_NO_ACK_PAYLOAD;
@@ -210,7 +214,29 @@ int8_t RemoteProtocol::_sendPacket(uint8_t* data, uint8_t* returnData) {
   }
 }
 
-int8_t RemoteProtocol::update() {
+int8_t RemoteProtocol::update(uint32_t* channels) {
+  
+  if(!isConnected()) {
+    return RC_ERROR_NOT_CONNECTED;
+  }
+
+  //TODO Figure out how to convert channels[NumChannels] to uint8_t[PayloadSize]
+
+  /*uint8_t numChannels = _settings.getNumChannels();
+  uint8_t channelSize = ceil(_settings.getChannelSize()/2.0);
+
+  uint8_t bytes[_settings.getPayloadSize()];
+  for(uint8_t i = 1; i < numChannels; i++) {
+    for(uint8_t n = 0; n < channelSize / 2; n++) {
+      //bytes[i * channelSize + n] = ;
+    }
+  }*/
+
+  //wait until The Comms Frequency delay has passed.
+  while(millis() - _timer < _timerDelay) {
+    delay(1);
+  }
+
   return 0;
 }
 
@@ -225,7 +251,6 @@ int8_t RemoteProtocol::_forceSend(void *buf, uint8_t size, uint32_t timeout) {
 
   return 0;
 }
-
 
 int8_t RemoteProtocol::_waitTillAvailable(uint32_t timeout) {
   uint32_t t = millis();

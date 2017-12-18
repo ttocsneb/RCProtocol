@@ -31,31 +31,31 @@
 /**
  * Communications have been established, but since lost it
  */
-#define RC_ERROR_LOST_CONNECTION -101
+#define RC_ERROR_LOST_CONNECTION -11
 /**
  * No connection has been made
  */
-#define RC_ERROR_TIMEOUT -102
+#define RC_ERROR_TIMEOUT -12
 /**
  * Data that was received does not match expectations
  */
-#define RC_ERROR_BAD_DATA -103
+#define RC_ERROR_BAD_DATA -13
 /**
  * Receiver was refused to connect
  */
-#define RC_ERROR_CONNECTION_REFUSED -104
+#define RC_ERROR_CONNECTION_REFUSED -14
 /**
  * Transmitter is not connected, so the function could not operate properly
  */
-#define RC_ERROR_NOT_CONNECTED -201
+#define RC_ERROR_NOT_CONNECTED -21
 /**
  * Packet did not get to receiver
  */
-#define RC_ERROR_PACKET_NOT_SENT -202
+#define RC_ERROR_PACKET_NOT_SENT -22
 /**
  * Expected ack payload, but got a regular ack instead
  */
-#define RC_INFO_NO_ACK_PAYLOAD 201
+#define RC_INFO_NO_ACK_PAYLOAD 21
 
 
 /**
@@ -154,10 +154,19 @@ public:
   /**
    * Update the communications with the currently connected device
    * 
-   * @note We should have already be connected with a device before calling update, see connect()
+   * This function holds until a specific amount of time has passed since 
+   * it was last called to fulfill RCSettings.setCommsFrequency()
+   * 
+   * @param channels array of size RCSettings.setNumChannels() with range 
+   * (0, `2^(RCSettings.setChannelSize() * 4) - 1`)
+   * 
+   * @todo create overloading function to support smaller channel sizes, 
+   * so that we don't have 64 32-bit numbers only holding 4-bit numbers
+   * 
+   * @return 0 if successful
+   * @return RC_ERROR_NOT_CONNECTED if there is no device connected
    */
-  int8_t update();
-
+  int8_t update(uint32_t* channels);
 
 private:
   const uint8_t _PAIR_ADDRESS[5] = {'P', 'a', 'i', 'r', '0'};
@@ -168,12 +177,16 @@ private:
 
   const uint8_t *_remoteId;
   uint8_t _deviceId[5];
-  bool _isConnected;
 
   RCSettings _settings;
   RCSettings _pairSettings;
 
   RF24 *_radio;
+
+  //update variables
+  bool _isConnected;
+  uint32_t _timer;
+  uint16_t _timerDelay;
 
   /**
    * Send a packet to the receiver
