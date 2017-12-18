@@ -12,7 +12,6 @@ RCSettings::RCSettings() {
     setCommsFrequency(60);
     setRetryDelay(15);
     setNumChannels(6);
-    setChannelSize(3);
 }
 
 void RCSettings::setSettings(const uint8_t* settings) {
@@ -109,24 +108,11 @@ uint8_t RCSettings::getRetryDelay() {
 }
 
 void RCSettings::setNumChannels(uint8_t numChannels) {
-    //Put Num Channels in bits 0 through 4 of byte 5
-    //0b00011111: 31
-    _settings[5] = (_settings[5] & (~31)) | ((numChannels - 1) & 31);
+    _settings[5] = numChannels;
 }
 
 uint8_t RCSettings::getNumChannels() {
-    return (_settings[5] & 31) + 1;
-}
-
-void RCSettings::setChannelSize(uint8_t channelSize) {
-    //Put Num Channels in bits 5 through 7 of byte 5
-    //0b11100000: 224
-    //0b00000111: 7
-    _settings[5] = (_settings[5] & (~224)) | ((channelSize - 1) & 7) << 5;
-}
-
-uint8_t RCSettings::getChannelSize() {
-    return ((_settings[5] >> 5) & 7) + 1;
+    return _settings[5];
 }
 
 void RCSettings::printSettings() {
