@@ -214,30 +214,41 @@ int8_t RemoteProtocol::_sendPacket(uint8_t* data, uint8_t* returnData) {
   }
 }
 
-int8_t RemoteProtocol::update(uint32_t* channels) {
+int8_t RemoteProtocol::update(uint16_t* channels) {
+
+  const uint8_t PACKET_BEGIN = 1;
+
   
   if(!isConnected()) {
     return RC_ERROR_NOT_CONNECTED;
   }
 
-  //TODO Figure out how to convert channels[NumChannels] to uint8_t[PayloadSize]
+  uint8_t packet[_settings.getPayloadSize()];
+  uint8_t returnPacket[_settings.getPayloadSize()];
 
-  /*uint8_t numChannels = _settings.getNumChannels();
-  uint8_t channelSize = ceil(_settings.getChannelSize()/2.0);
+  //copy channels into packet at PACKET_BEGIN
+  memcpy(packet + PACKET_BEGIN, channels, 
+        //protect the packet from writing beyond its bounds
+        min(static_cast<uint8_t>(_settings.getNumChannels() * sizeof(uint16_t)), 
+            _settings.getPayloadSize()-1));
 
-  uint8_t bytes[_settings.getPayloadSize()];
-  for(uint8_t i = 1; i < numChannels; i++) {
-    for(uint8_t n = 0; n < channelSize / 2; n++) {
-      //bytes[i * channelSize + n] = ;
-    }
-  }*/
+  //Set the packet type value
+  packet[0] = _STDPACKET;
 
+  //Send the packet.
+  int8_t status = _sendPacket(packet, returnPacket);
+
+
+  //Check if the frequency delay has already passed.
+  if(millis() - _timer > _timerDelay && status >= 0) {
+    status = RC_INFO_TICK_TOO_SHORT;
+  }
   //wait until The Comms Frequency delay has passed.
   while(millis() - _timer < _timerDelay) {
     delay(1);
   }
 
-  return 0;
+  return status;
 }
 
 int8_t RemoteProtocol::_forceSend(void *buf, uint8_t size, uint32_t timeout) {

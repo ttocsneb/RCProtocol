@@ -56,6 +56,10 @@
  * Expected ack payload, but got a regular ack instead
  */
 #define RC_INFO_NO_ACK_PAYLOAD 21
+/**
+ * The tick took longer than the wanted tick length.  See RCSettings.setCommsFrequency()
+ */
+#define RC_INFO_TICK_TOO_SHORT 22
 
 
 /**
@@ -157,22 +161,24 @@ public:
    * This function holds until a specific amount of time has passed since 
    * it was last called to fulfill RCSettings.setCommsFrequency()
    * 
-   * @param channels array of size RCSettings.setNumChannels() with range 
-   * (0, `2^(RCSettings.setChannelSize() * 4) - 1`)
+   * @param channels unsigned int array of size RCSettings.setNumChannels()
    * 
-   * @todo create overloading function to support smaller channel sizes, 
-   * so that we don't have 64 32-bit numbers only holding 4-bit numbers
-   * 
-   * @return 0 if successful
-   * @return RC_ERROR_NOT_CONNECTED if there is no device connected
+   * @return >= 0 if successful
+   * @return #RC_INFO_NO_ACK_PAYLOAD if no ack payload was received
+   * @return #RC_INFO_TICK_TOO_SHORT if RCSettings.setCommsFrequency() is 
+   * too high
+   * @return #RC_ERROR_NOT_CONNECTED if there is no device connected
+   * @return #RC_ERROR_PACKET_NOT_SENT
    */
-  int8_t update(uint32_t* channels);
+  int8_t update(uint16_t* channels);
 
 private:
   const uint8_t _PAIR_ADDRESS[5] = {'P', 'a', 'i', 'r', '0'};
   const uint8_t _YES = 0x6; //ACKNOWLEDGE
   const uint8_t _NO = 0x15; //NEGATIVE ACKNOWLEDGE
   const uint8_t _TEST = 0x2; //START OF TEXT
+
+  const uint8_t _STDPACKET = 0xA0;//A0-AF are reserved for standard packets.
 
 
   const uint8_t *_remoteId;
