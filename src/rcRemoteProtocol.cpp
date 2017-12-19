@@ -214,7 +214,7 @@ int8_t RemoteProtocol::_sendPacket(uint8_t* data, uint8_t* returnData) {
   }
 }
 
-int8_t RemoteProtocol::update(uint16_t* channels) {
+int8_t RemoteProtocol::update(uint16_t channels[]) {
 
   const uint8_t PACKET_BEGIN = 1;
 

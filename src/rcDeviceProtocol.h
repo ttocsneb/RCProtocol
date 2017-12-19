@@ -31,19 +31,23 @@
 /**
  * Communications have been established, but since lost it
  */
-#define RC_ERROR_LOST_CONNECTION -1
+#define RC_ERROR_LOST_CONNECTION -11
 /**
  * No connection has been made
  */
-#define RC_ERROR_TIMEOUT -2
+#define RC_ERROR_TIMEOUT -12
 /**
  * Data that was received does not match expectations
  */
-#define RC_ERROR_BAD_DATA -3
+#define RC_ERROR_BAD_DATA -13
 /**
  * Transmitter refused to connect
  */
-#define RC_ERROR_CONNECTION_REFUSED -4
+#define RC_ERROR_CONNECTION_REFUSED -14
+/**
+ * Receiver is not connected, so the function could not operate properly
+ */
+#define RC_ERROR_NOT_CONNECTED -21
 
 /**
  * Communication Protocol for receivers
@@ -125,13 +129,15 @@ public:
    * 
    * @note We should have already be connected with a device before calling update, see connect()
    */
-  int8_t update();
+  int8_t update(uint16_t channels[]);
 private:
   //"Pair0" is not supported by the compiler for some reason, so an explicit array is used.
   const uint8_t _PAIR_ADDRESS[5] = {'P', 'a', 'i', 'r', '0'};
   const uint8_t _YES = 0x6; //ACKNOWLEDGE
   const uint8_t _NO = 0x15; //NEGATIVE ACKNOWLEDGE
   const uint8_t _TEST = 0x2; //Start Of Text
+  
+  const uint8_t _STDPACKET = 0xA0;//A0-AF are reserved for standard packets.
 
   RCSettings *_settings;
   RCSettings _pairSettings;
@@ -144,6 +150,18 @@ private:
 
   int8_t _forceSend(void *buf, uint8_t size, unsigned long timeout);
   int8_t _waitTillAvailable(unsigned long timeout);
+
+  /**
+   * Check if a packet is available, and read it to returnData
+   * 
+   * @param returnData array of size RCSettings.setPayloadSize()
+   * 
+   * @return 0 if data available
+   * @return 1 if nothing is available
+   * @return #RC_ERROR_NOT_CONNECTED if not connected
+   */
+  int8_t _checkPacket(uint8_t *returnData);
+
   void _flushBuffer();
 
   void _applySettings(RCSettings *settings);

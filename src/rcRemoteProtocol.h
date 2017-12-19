@@ -170,7 +170,7 @@ public:
    * @return #RC_ERROR_NOT_CONNECTED if there is no device connected
    * @return #RC_ERROR_PACKET_NOT_SENT
    */
-  int8_t update(uint16_t* channels);
+  int8_t update(uint16_t channels[]);
 
 private:
   const uint8_t _PAIR_ADDRESS[5] = {'P', 'a', 'i', 'r', '0'};

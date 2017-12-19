@@ -199,8 +199,45 @@ bool DeviceProtocol::isConnected() {
   return _isConnected;
 }
 
-int8_t DeviceProtocol::update() {
-  return 0;
+int8_t DeviceProtocol::_checkPacket(uint8_t *returnData) {
+  if(!isConnected()) {
+    return RC_ERROR_NOT_CONNECTED;
+  }
+
+  if(_radio->available()) {
+    _radio->read(returnData, _settings->getPayloadSize());
+
+    return 0;
+  }
+
+  return 1;
+}
+
+int8_t DeviceProtocol::update(uint16_t channels[]) {
+  if(!isConnected()) {
+    return RC_ERROR_NOT_CONNECTED;
+  }
+
+  uint8_t returnData[_settings->getPayloadSize()];
+
+  int8_t status = 0;
+
+  while(status == 0) {
+
+    status = _checkPacket(returnData);
+
+    if(status == 0) {
+      if(returnData[0] == _STDPACKET) {
+        memcpy(channels, returnData + 1, 
+          min(static_cast<uint8_t>(_settings->getNumChannels() * sizeof(uint16_t)), 
+            _settings->getPayloadSize() - 1));
+        status = 0
+      }
+      status = 1;
+    }
+  }
+
+  return status;
 }
 
 int8_t DeviceProtocol::_forceSend(void *buf, uint8_t size, unsigned long timeout) {
