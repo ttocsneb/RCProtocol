@@ -207,33 +207,46 @@ int8_t DeviceProtocol::_checkPacket(uint8_t *returnData) {
   if(_radio->available()) {
     _radio->read(returnData, _settings->getPayloadSize());
 
-    return 0;
+    return 1;
   }
 
-  return 1;
+  return 0;
 }
 
-int8_t DeviceProtocol::update(uint16_t channels[]) {
+int8_t DeviceProtocol::update(uint16_t channels[], uint8_t telemetry[]) {
   if(!isConnected()) {
     return RC_ERROR_NOT_CONNECTED;
   }
 
   uint8_t returnData[_settings->getPayloadSize()];
 
+  int8_t packetStatus = 0;
   int8_t status = 0;
 
-  while(status == 0) {
+  //read through each transmission we have gotten since the last update
+  while(packetStatus == 0) {
 
-    status = _checkPacket(returnData);
+    //Load a transmission.
+    packetStatus = _checkPacket(returnData);
 
-    if(status == 0) {
+    //if the a packet was received
+    if(packetStatus == 0) {
+      //When the packet is a Standard Packet
       if(returnData[0] == _STDPACKET) {
+        //copy the received data to channels
         memcpy(channels, returnData + 1, 
           min(static_cast<uint8_t>(_settings->getNumChannels() * sizeof(uint16_t)), 
             _settings->getPayloadSize() - 1));
-        status = 0
+        
+        //Send the ack payload.
+        if(_settings->getEnableAckPayload()) {
+          _radio->writeAckPayload(1, telemetry, _settings->getPayloadSize());
+        }
+
+        status = 1;
       }
-      status = 1;
+    } else if(packetStatus < 0) {
+      status = packetStatus;
     }
   }
 

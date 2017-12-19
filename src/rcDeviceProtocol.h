@@ -127,9 +127,21 @@ public:
   /**
    * Update the communications with the currently connected device
    * 
-   * @note We should have already be connected with a device before calling update, see connect()
+   * If there was a packet sent, it will process it.
+   * 
+   * If the packet was a standard packet, it will set the channels array,
+   * to whatever was received, and return 1
+   * 
+   * @param channels RCSettings.setNumChannels() size array that is set 
+   * when a standard packet is received.
+   * @param telemetry RCSettings.setPayloadSize() size array of telemetry 
+   * data to send to the transmitter
+   * 
+   * @return 1 if channels was updated
+   * @return 0 if nothing happened
+   * @return #RC_ERROR_NOT_CONNECTED if not connected 
    */
-  int8_t update(uint16_t channels[]);
+  int8_t update(uint16_t channels[], uint8_t telemetry[]);
 private:
   //"Pair0" is not supported by the compiler for some reason, so an explicit array is used.
   const uint8_t _PAIR_ADDRESS[5] = {'P', 'a', 'i', 'r', '0'};
@@ -156,8 +168,8 @@ private:
    * 
    * @param returnData array of size RCSettings.setPayloadSize()
    * 
-   * @return 0 if data available
-   * @return 1 if nothing is available
+   * @return 1 if data available
+   * @return 0 if nothing is available
    * @return #RC_ERROR_NOT_CONNECTED if not connected
    */
   int8_t _checkPacket(uint8_t *returnData);
