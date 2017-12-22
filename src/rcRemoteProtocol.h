@@ -135,16 +135,22 @@ public:
   /**
    * Attempt to connect with a previously paired device
    * 
-   * @note The receiver should have already been paired with the remote, and in connect mode
+   * @note The receiver should have already been paired with the remote, 
+   * and in connect mode
    * 
-   * @param checkIfValid A function pointer to check if the found device has been paired, and to
-   * load the settings
+   * @warning channel and telemetry arrays need to be reset with 
+   * #setChannelArray()/#setTelemetryArray() after a connection is made.
+   * 
+   * @param checkIfValid A function pointer to check if the found device 
+   * has been paired, and to load the settings
    * 
    * @return 0 if successful
    * @return #RC_ERROR_TIMEOUT if no receiver was found.
    * @return #RC_ERROR_LOST_CONNECTION if receiver stopped replying
-   * @return #RC_ERROR_CONNECTION_REFUSED if the receiver is not on the pair list.
-   * @return #RC_ERROR_BAD_DATA if the settings are not set properly on both devices
+   * @return #RC_ERROR_CONNECTION_REFUSED if the receiver is not on the 
+   * pair list.
+   * @return #RC_ERROR_BAD_DATA if the settings are not set properly on 
+   * both devices
    */
   int8_t connect(checkIfValid checkIfValid);
   
@@ -156,12 +162,55 @@ public:
   bool isConnected();
 
   /**
+   * Set the Channel Array
+   * 
+   * This changes the memory address of the given pointer array to the 
+   * array that gets sent to the receiver.
+   * 
+   * This needs to be set once per connect, because the 
+   * pointer will change when a new connection is made.
+   * 
+   * Example:
+   * 
+   *     uint16_t* channels;
+   *     uint8_t channelSize;
+   *     channelSize = RCRemote.setChannelArray(&channels);
+   * 
+   * @param channels referenced pointer array to set
+   * 
+   * @return size of the array
+   */
+  uint8_t setChannelArray(uint16_t* &channels);
+
+  /**
+   * Set the Telemetry Array
+   * 
+   * This changes the memory address of the given pointer array to the 
+   * array that receives telemetry from the receiver.
+   * 
+   * This needs to be set once per connect, because the 
+   * pointer will change when a new connection is made.
+   * 
+   * Example:
+   * 
+   *     uint8_t* telemetry;
+   *     uint8_t telemetrySize;
+   *     telemetrySize = RCRemote.setTelemetryArray(&telemetry);
+   * 
+   * @param telemetry referenced pointer array to set
+   * 
+   * @return size of the array
+   */
+  uint8_t setTelemetryArray(uint8_t* &telemetry);
+
+  /**
    * Update the communications with the currently connected device
    * 
    * This function holds until a specific amount of time has passed since 
    * it was last called to fulfill RCSettings.setCommsFrequency()
    * 
-   * @param channels unsigned int array of size RCSettings.setNumChannels()
+   * It will also send channels.  In order to set the channels, see 
+   * setChannelArray()
    * 
    * @return >= 0 if successful
    * @return #RC_INFO_NO_ACK_PAYLOAD if no ack payload was received
@@ -170,7 +219,7 @@ public:
    * @return #RC_ERROR_NOT_CONNECTED if there is no device connected
    * @return #RC_ERROR_PACKET_NOT_SENT
    */
-  int8_t update(uint16_t channels[]);
+  int8_t update();
 
 private:
   const uint8_t _PAIR_ADDRESS[5] = {'P', 'a', 'i', 'r', '0'};
@@ -193,6 +242,11 @@ private:
   bool _isConnected;
   uint32_t _timer;
   uint16_t _timerDelay;
+
+  uint16_t* _channels;
+  uint8_t _channelsSize;
+  uint8_t* _telemetry;
+  uint8_t _telemetrySize;
 
   /**
    * Send a packet to the receiver
