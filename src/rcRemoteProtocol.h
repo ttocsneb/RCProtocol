@@ -167,7 +167,7 @@ public:
    * This changes the memory address of the given pointer array to the 
    * array that gets sent to the receiver.
    * 
-   * This needs to be set once per connect, because the 
+   * @note This needs to be set once per connect, because the 
    * pointer will change when a new connection is made.
    * 
    * Example:
@@ -188,7 +188,7 @@ public:
    * This changes the memory address of the given pointer array to the 
    * array that receives telemetry from the receiver.
    * 
-   * This needs to be set once per connect, because the 
+   * @note This needs to be set once per connect, because the 
    * pointer will change when a new connection is made.
    * 
    * Example:

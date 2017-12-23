@@ -197,11 +197,11 @@ int8_t RemoteProtocol::connect(RemoteProtocol::checkIfValid checkIfValid) {
   }
 
   //Set the channel/telemetry arrays
-  _channels = new uint16_t[_settings.getNumChannels()];
   _channelsSize = _settings.getNumChannels();
-
-  _telemetry = new uint8_t[_settings.getPayloadSize()];
+  _channels = new uint16_t[_channelsSize];
+  
   _telemetrySize = _settings.getPayloadSize();
+  _telemetry = new uint8_t[_telemetrySize];
 
   return 0;
 }
