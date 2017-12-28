@@ -277,6 +277,7 @@ int8_t RemoteProtocol::update() {
   while(millis() - _timer < _timerDelay) {
     delay(1);
   }
+  _timer = millis();
 
   return status;
 }
