@@ -10,6 +10,7 @@
 #include <RF24.h>
 
 #include "rcSettings.h"
+#include "rcGlobal.h"
 
 #ifndef __RF24_H__
 #error "rcRemoteProtocol Requires the tmrh20 RF24 Library: https://github.com/nRF24/RF24"
@@ -65,7 +66,7 @@
 /**
  * Communication Protocol for transmitters
  */
-class RemoteProtocol {
+class RemoteProtocol : RCGlobal {
 public:
   /**
    * Save settings to non-volitile memory, such as EEPROM

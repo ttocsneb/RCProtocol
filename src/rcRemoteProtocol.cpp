@@ -257,7 +257,7 @@ int8_t RemoteProtocol::update() {
   uint8_t packet[_settings.getPayloadSize()];
 
   //copy channels into packet at PACKET_BEGIN
-  memcpy(packet + PACKET_BEGIN, _channels, 
+  rc_cpy(packet + PACKET_BEGIN, _channels, 
         //protect the packet from writing beyond its bounds
         min(static_cast<uint8_t>(_channelsSize * sizeof(uint16_t)), 
             _settings.getPayloadSize() - PACKET_BEGIN));

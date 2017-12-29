@@ -264,7 +264,7 @@ int8_t DeviceProtocol::update() {
       //When the packet is a Standard Packet
       if(returnData[0] == _STDPACKET) {
         //copy the received data to channels
-        memcpy(_channels, returnData + 1, 
+        rc_cpy(_channels, returnData + 1, 
           min(static_cast<uint8_t>(_channelsSize * sizeof(uint16_t)), 
             _settings->getPayloadSize() - 1));
         

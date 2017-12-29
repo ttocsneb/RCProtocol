@@ -10,6 +10,7 @@
 #include <RF24.h>
 
 #include "rcSettings.h"
+#include "rcGlobal.h"
 
 #ifndef __RF24_H__
 #error "rcDeviceProtocol Requires the tmrh20 RF24 Library: https://github.com/nRF24/RF24"
@@ -52,7 +53,7 @@
 /**
  * Communication Protocol for receivers
  */
-class DeviceProtocol {
+class DeviceProtocol : RCGlobal {
 public:
   /**
    * Save the transmitter id to non-volitile memory.
