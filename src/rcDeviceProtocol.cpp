@@ -199,13 +199,13 @@ bool DeviceProtocol::isConnected() {
   return _isConnected;
 }
 
-int8_t DeviceProtocol::_checkPacket(uint8_t *returnData) {
+int8_t DeviceProtocol::_checkPacket(void* returnData, uint8_t dataSize) {
   if(!isConnected()) {
     return RC_ERROR_NOT_CONNECTED;
   }
 
   if(_radio->available()) {
-    _radio->read(returnData, _settings->getPayloadSize());
+    _radio->read(returnData, dataSize);
 
     return 1;
   }
@@ -218,7 +218,7 @@ int8_t DeviceProtocol::update(uint16_t channels[], uint8_t telemetry[]) {
     return RC_ERROR_NOT_CONNECTED;
   }
 
-  uint8_t returnData[_settings->getPayloadSize()];
+  //uint8_t returnData[_settings->getPayloadSize()];
 
   int8_t packetStatus = 0;
   int8_t status = 0;
@@ -227,16 +227,16 @@ int8_t DeviceProtocol::update(uint16_t channels[], uint8_t telemetry[]) {
   while(packetStatus == 0) {
 
     //Load a transmission.
-    packetStatus = _checkPacket(returnData);
+    packetStatus = _checkPacket(channels, _settings->getNumChannels() * sizeof(uint16_t));
 
     //if the a packet was received
     if(packetStatus == 0) {
       //When the packet is a Standard Packet
-      if(returnData[0] == _STDPACKET) {
+      //if(returnData[0] == _STDPACKET) {
         //copy the received data to channels
-        memcpy(channels, returnData + 1, 
+        /*memcpy(channels, returnData + 1, 
           min(static_cast<uint8_t>(_settings->getNumChannels() * sizeof(uint16_t)), 
-            _settings->getPayloadSize() - 1));
+            _settings->getPayloadSize() - 1));*/
         
         //Send the ack payload.
         if(_settings->getEnableAckPayload()) {
@@ -244,7 +244,7 @@ int8_t DeviceProtocol::update(uint16_t channels[], uint8_t telemetry[]) {
         }
 
         status = 1;
-      }
+      //}
     } else if(packetStatus < 0) {
       status = packetStatus;
     }

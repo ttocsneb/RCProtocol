@@ -189,16 +189,16 @@ bool RemoteProtocol::isConnected() {
   return _isConnected;
 }
 
-int8_t RemoteProtocol::_sendPacket(uint8_t* data, uint8_t* returnData) {
+int8_t RemoteProtocol::_sendPacket(void* data, uint8_t dataSize, void* returnData, uint8_t returnSize) {
   if(isConnected()) {
 
     //send data
-    if(_radio->write(data, _settings.getPayloadSize())) {
+    if(_radio->write(data, dataSize)) {
 
       //Check if a payload was sent back.
       if(_radio->isAckPayloadAvailable()) {
         //set returnData to whatever was sent back
-        _radio->read(returnData, _settings.getPayloadSize());
+        _radio->read(returnData, returnSize);
       } else if(_settings.getEnableAckPayload()) {
         //We were expecting a payload, but did not get one
         return RC_INFO_NO_ACK_PAYLOAD;
@@ -216,27 +216,27 @@ int8_t RemoteProtocol::_sendPacket(uint8_t* data, uint8_t* returnData) {
 
 int8_t RemoteProtocol::update(uint16_t channels[]) {
 
-  const uint8_t PACKET_BEGIN = 1;
+  //const uint8_t PACKET_BEGIN = 1;
 
   
   if(!isConnected()) {
     return RC_ERROR_NOT_CONNECTED;
   }
 
-  uint8_t packet[_settings.getPayloadSize()];
+  //uint8_t packet[_settings.getPayloadSize()];
   uint8_t returnPacket[_settings.getPayloadSize()];
 
   //copy channels into packet at PACKET_BEGIN
-  memcpy(packet + PACKET_BEGIN, channels, 
+  /*memcpy(packet + PACKET_BEGIN, channels, 
         //protect the packet from writing beyond its bounds
         min(static_cast<uint8_t>(_settings.getNumChannels() * sizeof(uint16_t)), 
-            _settings.getPayloadSize()-1));
+            _settings.getPayloadSize()-1));*/
 
   //Set the packet type value
-  packet[0] = _STDPACKET;
+  //packet[0] = _STDPACKET;
 
   //Send the packet.
-  int8_t status = _sendPacket(packet, returnPacket);
+  int8_t status = _sendPacket(channels, sizeof(uint16_t) * _settings.getNumChannels(), returnPacket, sizeof(uint8_t) * _settings.getPayloadSize());
 
 
   //Check if the frequency delay has already passed.
@@ -247,6 +247,8 @@ int8_t RemoteProtocol::update(uint16_t channels[]) {
   while(millis() - _timer < _timerDelay) {
     delay(1);
   }
+
+  _timer = millis();
 
   return status;
 }

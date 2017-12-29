@@ -207,7 +207,7 @@ private:
    * @return #RC_ERROR_PACKET_NOT_SENT
    * @return #RC_ERROR_NOT_CONNECTED
    */
-  int8_t _sendPacket(uint8_t* data, uint8_t* returnData);
+  int8_t _sendPacket(void* data, uint8_t dataSize, void* returnData, uint8_t returnSize);
 
   int8_t _forceSend(void *buf, uint8_t size, uint32_t timeout);
   int8_t _waitTillAvailable(uint32_t timeout);
