@@ -199,13 +199,20 @@ bool DeviceProtocol::isConnected() {
   return _isConnected;
 }
 
-int8_t DeviceProtocol::_checkPacket(void* returnData, uint8_t dataSize) {
+int8_t DeviceProtocol::_checkPacket(void* returnData, uint8_t dataSize, void* telemetry, uint8_t telemetrySize) {
   if(!isConnected()) {
     return RC_ERROR_NOT_CONNECTED;
   }
 
-  if(_radio->available()) {
+  uint8_t pipe = 0;
+
+  if(_radio->available(&pipe)) {
     _radio->read(returnData, dataSize);
+
+    //Check if the telemetry should be sent through the ackPayload
+    if(telemetry && _settings->getEnableAckPayload()) {
+        _radio->writeAckPayload(pipe, telemetry, telemetrySize);
+    }
 
     return 1;
   }
@@ -213,38 +220,33 @@ int8_t DeviceProtocol::_checkPacket(void* returnData, uint8_t dataSize) {
   return 0;
 }
 
+int8_t DeviceProtocol::_checkPacket(void* returnData, uint8_t dataSize) {
+  return _checkPacket(returnData, dataSize, NULL, 0);
+}
+
 int8_t DeviceProtocol::update(uint16_t channels[], uint8_t telemetry[]) {
   if(!isConnected()) {
     return RC_ERROR_NOT_CONNECTED;
   }
 
-  //uint8_t returnData[_settings->getPayloadSize()];
-
   int8_t packetStatus = 0;
   int8_t status = 0;
 
+  //Load a transmission, and send an ack payload.
+  packetStatus = _checkPacket(channels, _settings->getNumChannels() * sizeof(uint16_t), telemetry, _settings->getPayloadSize());
+
   //read through each transmission we have gotten since the last update
-  while(packetStatus == 0) {
+  while(packetStatus == 1) {
 
     //Load a transmission.
     packetStatus = _checkPacket(channels, _settings->getNumChannels() * sizeof(uint16_t));
 
     //if the a packet was received
-    if(packetStatus == 0) {
-      //When the packet is a Standard Packet
-      //if(returnData[0] == _STDPACKET) {
-        //copy the received data to channels
-        /*memcpy(channels, returnData + 1, 
-          min(static_cast<uint8_t>(_settings->getNumChannels() * sizeof(uint16_t)), 
-            _settings->getPayloadSize() - 1));*/
-        
-        //Send the ack payload.
-        if(_settings->getEnableAckPayload()) {
-          _radio->writeAckPayload(1, telemetry, _settings->getPayloadSize());
-        }
+    if(packetStatus == 1) {
 
-        status = 1;
-      //}
+      //Do stuff when a packet was received
+
+      status = 1;
     } else if(packetStatus < 0) {
       status = packetStatus;
     }

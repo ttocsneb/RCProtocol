@@ -172,7 +172,8 @@ private:
    * @return 0 if nothing is available
    * @return #RC_ERROR_NOT_CONNECTED if not connected
    */
-  int8_t _checkPacket(void *returnData, uint8_t dataSize);
+  int8_t _checkPacket(void* returnData, uint8_t dataSize, void* telemetry, uint8_t telemetrySize);
+  int8_t _checkPacket(void* returnData, uint8_t dataSize);
 
   void _flushBuffer();
 
