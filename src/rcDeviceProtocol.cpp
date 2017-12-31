@@ -41,7 +41,8 @@ int8_t DeviceProtocol::pair(DeviceProtocol::saveRemoteID saveRemoteID) {
   uint8_t radioId[_ID_SIZE];
   bool sent = false;
 
-  //Set the PA level to low as the pairing devices are going to be fairly close to each other.
+  //Set the PA level to low as the pairing devices are going to be fairly 
+  //close to each other.
   _radio->setPALevel(RF24_PA_LOW);
 
   _applySettings(&_pairSettings);
@@ -92,7 +93,8 @@ int8_t DeviceProtocol::connect(uint8_t remoteId[]) {
   uint8_t connectSuccess = 0;
   uint8_t test = 0;
 
-  //reset connected because if we fail connecting, we will not be connected to anything.
+  //reset connected because if we fail connecting, we will not be connected 
+  //to anything.
   _isConnected = false;
   
   _radio->setPALevel(RF24_PA_LOW);
@@ -108,12 +110,16 @@ int8_t DeviceProtocol::connect(uint8_t remoteId[]) {
   _radio->stopListening();
 
   //send the device id to the remote, this announces who we are.
-  if(_forceSend(const_cast<uint8_t*>(_deviceId), 5, RC_TIMEOUT) != 0) return RC_ERROR_TIMEOUT;
+  if(_forceSend(const_cast<uint8_t*>(_deviceId), 5, RC_TIMEOUT) != 0) {
+    return RC_ERROR_TIMEOUT;
+  }
 
   _radio->startListening();
 
   //Wait until a response is made
-  if(_waitTillAvailable(RC_CONNECT_TIMEOUT) != 0) return RC_ERROR_LOST_CONNECTION;
+  if(_waitTillAvailable(RC_CONNECT_TIMEOUT) != 0) {
+    return RC_ERROR_LOST_CONNECTION;
+  }
   
   _radio->read(&connectSuccess, 1);
 
@@ -199,13 +205,20 @@ bool DeviceProtocol::isConnected() {
   return _isConnected;
 }
 
-int8_t DeviceProtocol::_checkPacket(uint8_t *returnData) {
+int8_t DeviceProtocol::_checkPacket(void* returnData, uint8_t dataSize, void* telemetry, uint8_t telemetrySize) {
   if(!isConnected()) {
     return RC_ERROR_NOT_CONNECTED;
   }
 
-  if(_radio->available()) {
-    _radio->read(returnData, _settings->getPayloadSize());
+  uint8_t pipe = 0;
+
+  if(_radio->available(&pipe)) {
+    _radio->read(returnData, dataSize);
+
+    //Check if the telemetry should be sent through the ackPayload
+    if(telemetry && _settings->getEnableAckPayload()) {
+        _radio->writeAckPayload(pipe, telemetry, telemetrySize);
+    }
 
     return 1;
   }
@@ -213,38 +226,36 @@ int8_t DeviceProtocol::_checkPacket(uint8_t *returnData) {
   return 0;
 }
 
+int8_t DeviceProtocol::_checkPacket(void* returnData, uint8_t dataSize) {
+  return _checkPacket(returnData, dataSize, NULL, 0);
+}
+
 int8_t DeviceProtocol::update(uint16_t channels[], uint8_t telemetry[]) {
   if(!isConnected()) {
     return RC_ERROR_NOT_CONNECTED;
   }
 
-  uint8_t returnData[_settings->getPayloadSize()];
-
   int8_t packetStatus = 0;
   int8_t status = 0;
 
+  //Load a transmission, and send an ack payload.
+  packetStatus = _checkPacket(channels, 
+    _settings->getNumChannels() * sizeof(uint16_t), 
+    telemetry, _settings->getPayloadSize());
+
   //read through each transmission we have gotten since the last update
-  while(packetStatus == 0) {
+  while(packetStatus == 1) {
 
     //Load a transmission.
-    packetStatus = _checkPacket(returnData);
+    packetStatus = _checkPacket(channels, 
+      _settings->getNumChannels() * sizeof(uint16_t));
 
     //if the a packet was received
-    if(packetStatus == 0) {
-      //When the packet is a Standard Packet
-      if(returnData[0] == _STDPACKET) {
-        //copy the received data to channels
-        memcpy(channels, returnData + 1, 
-          min(static_cast<uint8_t>(_settings->getNumChannels() * sizeof(uint16_t)), 
-            _settings->getPayloadSize() - 1));
-        
-        //Send the ack payload.
-        if(_settings->getEnableAckPayload()) {
-          _radio->writeAckPayload(1, telemetry, _settings->getPayloadSize());
-        }
+    if(packetStatus == 1) {
 
-        status = 1;
-      }
+      //Do stuff when a packet was received
+
+      status = 1;
     } else if(packetStatus < 0) {
       status = packetStatus;
     }

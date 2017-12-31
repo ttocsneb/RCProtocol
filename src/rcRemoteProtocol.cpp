@@ -64,14 +64,18 @@ int8_t RemoteProtocol::pair(RemoteProtocol::saveSettings saveSettings) {
   _radio->startListening();
 
   //wait until data is available, if it takes too long, error lost connection
-  if(_waitTillAvailable(RC_CONNECT_TIMEOUT) != 0) return RC_ERROR_LOST_CONNECTION;
+  if(_waitTillAvailable(RC_CONNECT_TIMEOUT) != 0) {
+    return RC_ERROR_LOST_CONNECTION;
+  }
 
   //read the deviceId
   _radio->read(&deviceId, _ID_SIZE);
 
   
   //wait until data is available, if it takes too long, error lost connection
-  if(_waitTillAvailable(RC_CONNECT_TIMEOUT) != 0) return RC_ERROR_LOST_CONNECTION;
+  if(_waitTillAvailable(RC_CONNECT_TIMEOUT) != 0) {
+    return RC_ERROR_LOST_CONNECTION;
+  }
 
   //Read the settings to settings
   _radio->read(settings, 32);
@@ -89,7 +93,8 @@ int8_t RemoteProtocol::connect(RemoteProtocol::checkIfValid checkIfValid) {
   uint8_t testData = 0;
   bool valid = false;
 
-  //reset connected because if we fail connecting, we will not be connected to anything.
+  //reset connected because if we fail connecting, we will not be connected 
+  //to anything.
   _isConnected = false;
 
   //Set the PA level to low since the two devices will be close to eachother
@@ -168,7 +173,9 @@ int8_t RemoteProtocol::connect(RemoteProtocol::checkIfValid checkIfValid) {
 
     _radio->startListening();
 
-    if(_waitTillAvailable(RC_CONNECT_TIMEOUT) != 0) return RC_ERROR_LOST_CONNECTION;
+    if(_waitTillAvailable(RC_CONNECT_TIMEOUT) != 0) {
+      return RC_ERROR_LOST_CONNECTION;
+    }
 
     _radio->read(&testData, 1);
 
@@ -179,7 +186,8 @@ int8_t RemoteProtocol::connect(RemoteProtocol::checkIfValid checkIfValid) {
 
   //We passed all of the tests, so we are connected.
   _isConnected = true;
-  //set timer delay as a variable once so it doesn't need to be recalculated every update
+  //set timer delay as a variable once so it doesn't need to be recalculated 
+  //every update
   _timerDelay = round(1000.0 / _settings.getCommsFrequency());
 
   return 0;
@@ -189,19 +197,17 @@ bool RemoteProtocol::isConnected() {
   return _isConnected;
 }
 
-int8_t RemoteProtocol::_sendPacket(uint8_t* data, uint8_t* returnData) {
+int8_t RemoteProtocol::_sendPacket(void* data, uint8_t dataSize, void* telemetry, uint8_t telemetrySize) {
   if(isConnected()) {
 
     //send data
-    if(_radio->write(data, _settings.getPayloadSize())) {
+    if(_radio->write(data, dataSize)) {
 
       //Check if a payload was sent back.
       if(_radio->isAckPayloadAvailable()) {
-        //set returnData to whatever was sent back
-        _radio->read(returnData, _settings.getPayloadSize());
-      } else if(_settings.getEnableAckPayload()) {
-        //We were expecting a payload, but did not get one
-        return RC_INFO_NO_ACK_PAYLOAD;
+        //set telemetry to whatever was sent back
+        _radio->read(telemetry, telemetrySize);
+        return 1;
       }
     } else if(_settings.getEnableAck()) {
       //We were expecting at least an ack, but did not get one
@@ -214,29 +220,19 @@ int8_t RemoteProtocol::_sendPacket(uint8_t* data, uint8_t* returnData) {
   }
 }
 
-int8_t RemoteProtocol::update(uint16_t channels[]) {
+int8_t RemoteProtocol::update(uint16_t channels[], uint8_t telemetry[]) {
 
-  const uint8_t PACKET_BEGIN = 1;
+  //const uint8_t PACKET_BEGIN = 1;
 
   
   if(!isConnected()) {
     return RC_ERROR_NOT_CONNECTED;
   }
 
-  uint8_t packet[_settings.getPayloadSize()];
-  uint8_t returnPacket[_settings.getPayloadSize()];
-
-  //copy channels into packet at PACKET_BEGIN
-  memcpy(packet + PACKET_BEGIN, channels, 
-        //protect the packet from writing beyond its bounds
-        min(static_cast<uint8_t>(_settings.getNumChannels() * sizeof(uint16_t)), 
-            _settings.getPayloadSize()-1));
-
-  //Set the packet type value
-  packet[0] = _STDPACKET;
-
   //Send the packet.
-  int8_t status = _sendPacket(packet, returnPacket);
+  int8_t status = _sendPacket(channels, 
+    sizeof(uint16_t) * _settings.getNumChannels(), 
+    telemetry, sizeof(uint8_t) * _settings.getPayloadSize());
 
 
   //Check if the frequency delay has already passed.
@@ -247,6 +243,8 @@ int8_t RemoteProtocol::update(uint16_t channels[]) {
   while(millis() - _timer < _timerDelay) {
     delay(1);
   }
+
+  _timer = millis();
 
   return status;
 }

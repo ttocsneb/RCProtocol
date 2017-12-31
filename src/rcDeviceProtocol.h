@@ -129,15 +129,12 @@ public:
    * 
    * If there was a packet sent, it will process it.
    * 
-   * If the packet was a standard packet, it will set the channels array,
-   * to whatever was received, and return 1
-   * 
    * @param channels RCSettings.setNumChannels() size array that is set 
    * when a standard packet is received.
    * @param telemetry RCSettings.setPayloadSize() size array of telemetry 
    * data to send to the transmitter
    * 
-   * @return 1 if channels was updated
+   * @return 1 if channels were updated
    * @return 0 if nothing happened
    * @return #RC_ERROR_NOT_CONNECTED if not connected 
    */
@@ -166,13 +163,18 @@ private:
   /**
    * Check if a packet is available, and read it to returnData
    * 
-   * @param returnData array of size RCSettings.setPayloadSize()
+   * @param returnData data to set if data was received
+   * @param dataSize size of returnData in bytes
+   * @param telemetry Data to Send back.  Note: telemetry won't be sent if 
+   * ack payloads are disabled
+   * @param telemetrySize size of telemetry in bytes
    * 
-   * @return 1 if data available
+   * @return 1 if data is available
    * @return 0 if nothing is available
    * @return #RC_ERROR_NOT_CONNECTED if not connected
    */
-  int8_t _checkPacket(uint8_t *returnData);
+  int8_t _checkPacket(void* returnData, uint8_t dataSize, void* telemetry, uint8_t telemetrySize);
+  int8_t _checkPacket(void* returnData, uint8_t dataSize);
 
   void _flushBuffer();
 

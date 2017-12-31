@@ -141,6 +141,9 @@ void RCSettings::printSettings() {
     Serial.print("Retry Delay: ");
     Serial.println(getRetryDelay());
 
+    Serial.print("Num Channels: ");
+    Serial.println(getNumChannels());
+
     Serial.println("Array:");
     for(int i=0; i<5; i++) {
         Serial.print("  ");

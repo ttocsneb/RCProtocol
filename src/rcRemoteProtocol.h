@@ -53,13 +53,9 @@
  */
 #define RC_ERROR_PACKET_NOT_SENT -22
 /**
- * Expected ack payload, but got a regular ack instead
- */
-#define RC_INFO_NO_ACK_PAYLOAD 21
-/**
  * The tick took longer than the wanted tick length.  See RCSettings.setCommsFrequency()
  */
-#define RC_INFO_TICK_TOO_SHORT 22
+#define RC_INFO_TICK_TOO_SHORT 21
 
 
 /**
@@ -170,7 +166,7 @@ public:
    * @return #RC_ERROR_NOT_CONNECTED if there is no device connected
    * @return #RC_ERROR_PACKET_NOT_SENT
    */
-  int8_t update(uint16_t channels[]);
+  int8_t update(uint16_t channels[], uint8_t telemetry[]);
 
 private:
   const uint8_t _PAIR_ADDRESS[5] = {'P', 'a', 'i', 'r', '0'};
@@ -199,15 +195,17 @@ private:
    * 
    * When a packet is received, it will set returnData with the received data
    * 
-   * @param data RCSettings.getPayloadSize() byte array to send
-   * @param returnData RCSettings.getPayloadSize() byte array to receive
+   * @param data data to write to receiver
+   * @param dataSize size in bytes of data
+   * @param telemetry data to be set if telemetry is received.
+   * @param telemetrySize size in bytes of telemetry
    * 
    * @return >= 0 if successfull
-   * @return #RC_INFO_NO_ACK_PAYLOAD
+   * @return 1 if telemetry was updated
    * @return #RC_ERROR_PACKET_NOT_SENT
    * @return #RC_ERROR_NOT_CONNECTED
    */
-  int8_t _sendPacket(uint8_t* data, uint8_t* returnData);
+  int8_t _sendPacket(void* data, uint8_t dataSize, void* telemetry, uint8_t telemetrySize);
 
   int8_t _forceSend(void *buf, uint8_t size, uint32_t timeout);
   int8_t _waitTillAvailable(uint32_t timeout);
