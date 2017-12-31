@@ -183,9 +183,6 @@ int8_t DeviceProtocol::connect(uint8_t remoteId[]) {
 
     _radio->startListening();
 
-
-
-
   }
 
   //We passed all of the tests, so we are connected.
@@ -195,38 +192,11 @@ int8_t DeviceProtocol::connect(uint8_t remoteId[]) {
     _remoteId[i] = remoteId[i];
   }
 
-  //Prevent Memory Leaks
-  if(_telemetry != NULL) {
-    delete[] _telemetry;
-    _telemetry = NULL;
-  }
-  if(_channels != NULL) {
-    delete[] _channels;
-    _channels = NULL;
-  }
-
-  //Set the channel/telemetry arrays
-  _channelsSize = _settings->getNumChannels();
-  _channels = new uint16_t[_channelsSize];
-
-  _telemetrySize = _settings->getPayloadSize();
-  _telemetry = new uint8_t[_telemetrySize];
-
   return 0;
 }
 
 bool DeviceProtocol::isConnected() {
   return _isConnected;
-}
-
-uint8_t DeviceProtocol::setChannelArray(uint16_t* &channels) {
-  channels = _channels;
-  return _channelsSize;
-}
-
-uint8_t DeviceProtocol::setTelemetryArray(uint8_t* &telemetry) {
-  telemetry = _telemetry;
-  return _telemetrySize;
 }
 
 int8_t DeviceProtocol::_checkPacket(uint8_t *returnData) {
@@ -243,7 +213,7 @@ int8_t DeviceProtocol::_checkPacket(uint8_t *returnData) {
   return 0;
 }
 
-int8_t DeviceProtocol::update() {
+int8_t DeviceProtocol::update(uint16_t channels[], uint8_t telemetry[]) {
   if(!isConnected()) {
     return RC_ERROR_NOT_CONNECTED;
   }
@@ -264,13 +234,13 @@ int8_t DeviceProtocol::update() {
       //When the packet is a Standard Packet
       if(returnData[0] == _STDPACKET) {
         //copy the received data to channels
-        rc_cpy(_channels, returnData + 1, 
-          min(static_cast<uint8_t>(_channelsSize * sizeof(uint16_t)), 
+        memcpy(channels, returnData + 1, 
+          min(static_cast<uint8_t>(_settings->getNumChannels() * sizeof(uint16_t)), 
             _settings->getPayloadSize() - 1));
         
         //Send the ack payload.
         if(_settings->getEnableAckPayload()) {
-          _radio->writeAckPayload(1, _telemetry, _telemetrySize);
+          _radio->writeAckPayload(1, telemetry, _settings->getPayloadSize());
         }
 
         status = 1;

@@ -10,7 +10,6 @@
 #include <RF24.h>
 
 #include "rcSettings.h"
-#include "rcGlobal.h"
 
 #ifndef __RF24_H__
 #error "rcDeviceProtocol Requires the tmrh20 RF24 Library: https://github.com/nRF24/RF24"
@@ -53,7 +52,7 @@
 /**
  * Communication Protocol for receivers
  */
-class DeviceProtocol : RCGlobal {
+class DeviceProtocol {
 public:
   /**
    * Save the transmitter id to non-volitile memory.
@@ -126,48 +125,6 @@ public:
   int8_t connect(uint8_t remoteId[]);
 
   /**
-   * Set the Channel Array
-   * 
-   * This changes the memory address of the given pointer array to the 
-   * array that gets received by the transmitter.
-   * 
-   * @note This needs to be set once per connect, because the 
-   * pointer will change when a new connection is made.
-   * 
-   * Example:
-   * 
-   *     uint16_t* channels;
-   *     uint8_t channelSize;
-   *     channelSize = RCDevice.setChannelArray(&channels);
-   * 
-   * @param channels referenced pointer array to set
-   * 
-   * @return size of the array
-   */
-  uint8_t setChannelArray(uint16_t* &channels);
-
-  /**
-   * Set the Telemetry Array
-   * 
-   * This changes the memory address of the given pointer array to the 
-   * array that sends telemetry to the transmitter.
-   * 
-   * @note This needs to be set once per connect, because the 
-   * pointer will change when a new connection is made.
-   * 
-   * Example:
-   * 
-   *     uint8_t* telemetry;
-   *     uint8_t telemetrySize;
-   *     telemetrySize = RCDevice.setTelemetryArray(&telemetry);
-   * 
-   * @param telemetry referenced pointer array to set
-   * 
-   * @return size of the array
-   */
-  uint8_t setTelemetryArray(uint8_t* &telemetry);
-
-  /**
    * Update the communications with the currently connected device
    * 
    * If there was a packet sent, it will process it.
@@ -175,15 +132,16 @@ public:
    * If the packet was a standard packet, it will set the channels array,
    * to whatever was received, and return 1
    * 
-   * @note To get/send channels/telemetry Use setChannelArray() and 
-   * setTelemetryArray(). You can access the data through the arrays you 
-   * set.
+   * @param channels RCSettings.setNumChannels() size array that is set 
+   * when a standard packet is received.
+   * @param telemetry RCSettings.setPayloadSize() size array of telemetry 
+   * data to send to the transmitter
    * 
    * @return 1 if channels was updated
    * @return 0 if nothing happened
    * @return #RC_ERROR_NOT_CONNECTED if not connected 
    */
-  int8_t update();
+  int8_t update(uint16_t channels[], uint8_t telemetry[]);
 private:
   //"Pair0" is not supported by the compiler for some reason, so an explicit array is used.
   const uint8_t _PAIR_ADDRESS[5] = {'P', 'a', 'i', 'r', '0'};
@@ -201,11 +159,6 @@ private:
   const uint8_t *_deviceId;
   uint8_t _remoteId[5];
   bool _isConnected;
-
-  uint8_t* _telemetry;
-  uint8_t _telemetrySize;
-  uint16_t* _channels;
-  uint8_t _channelsSize;
 
   int8_t _forceSend(void *buf, uint8_t size, unsigned long timeout);
   int8_t _waitTillAvailable(unsigned long timeout);

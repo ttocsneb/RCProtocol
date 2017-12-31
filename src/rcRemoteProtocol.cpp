@@ -24,9 +24,6 @@ RemoteProtocol::RemoteProtocol(RF24 *tranceiver, const uint8_t remoteId[]) {
   _radio = tranceiver;
   _remoteId = remoteId;
 
-  _channels = NULL;
-  _telemetry = NULL;
-
   //Set connection settings
   _pairSettings.setEnableDynamicPayload(false);
   _pairSettings.setEnableAck(true);
@@ -185,39 +182,11 @@ int8_t RemoteProtocol::connect(RemoteProtocol::checkIfValid checkIfValid) {
   //set timer delay as a variable once so it doesn't need to be recalculated every update
   _timerDelay = round(1000.0 / _settings.getCommsFrequency());
 
-  
-  //Prevent memory leaks.
-  if(_channels != NULL) {
-    delete[] _channels;
-    _channels = NULL;
-  }
-  if(_telemetry != NULL) {
-    delete[] _telemetry;
-    _telemetry = NULL;
-  }
-
-  //Set the channel/telemetry arrays
-  _channelsSize = _settings.getNumChannels();
-  _channels = new uint16_t[_channelsSize];
-  
-  _telemetrySize = _settings.getPayloadSize();
-  _telemetry = new uint8_t[_telemetrySize];
-
   return 0;
 }
 
 bool RemoteProtocol::isConnected() {
   return _isConnected;
-}
-
-uint8_t RemoteProtocol::setChannelArray(uint16_t* &channels) {
-  channels = _channels;
-  return _channelsSize;
-}
-
-uint8_t RemoteProtocol::setTelemetryArray(uint8_t* &telemetry) {
-  telemetry = _telemetry;
-  return _telemetrySize;
 }
 
 int8_t RemoteProtocol::_sendPacket(uint8_t* data, uint8_t* returnData) {
@@ -245,7 +214,7 @@ int8_t RemoteProtocol::_sendPacket(uint8_t* data, uint8_t* returnData) {
   }
 }
 
-int8_t RemoteProtocol::update() {
+int8_t RemoteProtocol::update(uint16_t channels[]) {
 
   const uint8_t PACKET_BEGIN = 1;
 
@@ -255,18 +224,19 @@ int8_t RemoteProtocol::update() {
   }
 
   uint8_t packet[_settings.getPayloadSize()];
+  uint8_t returnPacket[_settings.getPayloadSize()];
 
   //copy channels into packet at PACKET_BEGIN
-  rc_cpy(packet + PACKET_BEGIN, _channels, 
+  memcpy(packet + PACKET_BEGIN, channels, 
         //protect the packet from writing beyond its bounds
-        min(static_cast<uint8_t>(_channelsSize * sizeof(uint16_t)), 
-            _settings.getPayloadSize() - PACKET_BEGIN));
+        min(static_cast<uint8_t>(_settings.getNumChannels() * sizeof(uint16_t)), 
+            _settings.getPayloadSize()-1));
 
   //Set the packet type value
   packet[0] = _STDPACKET;
 
   //Send the packet.
-  int8_t status = _sendPacket(packet, _telemetry);
+  int8_t status = _sendPacket(packet, returnPacket);
 
 
   //Check if the frequency delay has already passed.
@@ -277,7 +247,6 @@ int8_t RemoteProtocol::update() {
   while(millis() - _timer < _timerDelay) {
     delay(1);
   }
-  _timer = millis();
 
   return status;
 }
