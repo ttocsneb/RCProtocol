@@ -62,8 +62,12 @@ RemoteProtocol KEYWORD2
 # Constants (LITERAL1)
 #######################################
 
+# Global Userdefined Literals
+
 RC_TIMEOUT LITERAL1
 RC_CONNECT_TIMEOUT LITERAL1
+
+# Global Literals
 
 RC_ERROR_LOST_CONNECTION LITERAL1
 RC_ERROR_TIMEOUT LITERAL1
