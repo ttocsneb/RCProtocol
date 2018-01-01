@@ -132,10 +132,14 @@ public:
    * This function holds until a specific amount of time has passed since
    * it was last called to fulfill RCSettings.setCommsFrequency()
    *
-   * @param channels unsigned int array of size RCSettings.setNumChannels()
+   * If telemetry is received from the receiver, telemetry will be updated, and
+   * returns 1.
+   *
+   * @param channels array of size RCSettings.setNumChannels() to send
+   * @param telemetry array of size RCSettings.setPayloadSize() to receive
    *
    * @return >= 0 if successful
-   * @return #RC_INFO_NO_ACK_PAYLOAD if no ack payload was received
+   * @return 1 if telemetry was received
    * @return #RC_INFO_TICK_TOO_SHORT if RCSettings.setCommsFrequency() is
    * too high
    * @return #RC_ERROR_NOT_CONNECTED if there is no device connected
