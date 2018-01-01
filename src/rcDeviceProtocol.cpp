@@ -3,48 +3,34 @@
 #include "rcDeviceProtocol.h"
 #include "rcSettings.h"
 
-#define _ID_SIZE 5
-
-#define _PAIR_SIZE 32
-#define _PAIR_CHANNEL 63
-
 DeviceProtocol::DeviceProtocol(RF24* tranceiver, const uint8_t deviceId[]) {
   _isConnected = false;
 
-  for(uint8_t i = 0; i < _ID_SIZE; i++) {
+  for(uint8_t i = 0; i < 5; i++) {
     _remoteId[i] = 0;
   }
 
   _radio = tranceiver;
   _deviceId = deviceId;
 
-  //Set Connection Settings
-  _pairSettings.setEnableDynamicPayload(false);
-  _pairSettings.setEnableAck(true);
-  _pairSettings.setEnableAckPayload(false);
-  _pairSettings.setDataRate(RF24_1MBPS);
-  _pairSettings.setStartChannel(_PAIR_CHANNEL);
-  _pairSettings.setPayloadSize(_PAIR_SIZE);
-  _pairSettings.setRetryDelay(7);
-
 }
 
 void DeviceProtocol::begin(RCSettings* settings) {
-  _settings = settings;
+  _settings.setSettings(settings->getSettings());
 
   _radio->begin();
   _radio->stopListening();
 }
 
 int8_t DeviceProtocol::pair(DeviceProtocol::saveRemoteID saveRemoteID) {
-  uint8_t radioId[_ID_SIZE];
+  uint8_t radioId[5];
   bool sent = false;
 
   //Set the PA level to low as the pairing devices are going to be fairly
   //close to each other.
   _radio->setPALevel(RF24_PA_LOW);
 
-  _applySettings(&_pairSettings);
+  apply_settings(&_pairSettings);
 
   //Don't yet open a writing pipe as we don't know who we will write to
   _radio->openReadingPipe(1, _PAIR_ADDRESS);
@@ -52,15 +38,15 @@ int8_t DeviceProtocol::pair(DeviceProtocol::saveRemoteID saveRemoteID) {
   _radio->startListening();
 
   //clear the buffer of any unread messages.
-  _flushBuffer();
+  flush_buffer();
 
   //wait until data is available from the remote
-  if(_waitTillAvailable(RC_TIMEOUT) != 0) {
+  if(wait_till_available(RC_TIMEOUT) != 0) {
     return RC_ERROR_TIMEOUT;
   }
 
   //Read the Radio's ID
-  _radio->read(&radioId, _ID_SIZE);
+  _radio->read(&radioId, 5);
 
   //write to the remote the device id
   saveRemoteID(radioId);
@@ -74,7 +60,7 @@ int8_t DeviceProtocol::pair(DeviceProtocol::saveRemoteID saveRemoteID) {
   delay(200);
 
   //Send the device id to the remote
-  sent = _radio->write(const_cast<uint8_t*>(_deviceId), _ID_SIZE);
+  sent = _radio->write(const_cast<uint8_t*>(_deviceId), 5);
   if(!sent) {
     return RC_ERROR_LOST_CONNECTION;
   }
@@ -82,7 +68,7 @@ int8_t DeviceProtocol::pair(DeviceProtocol::saveRemoteID saveRemoteID) {
   delay(200);
 
   //Send the settings to the remote
-  sent = _radio->write(const_cast<uint8_t*>(_settings->getSettings()), 32);
+  sent = _radio->write(const_cast<uint8_t*>(_settings.getSettings()), 32);
   if(!sent) {
     return RC_ERROR_LOST_CONNECTION;
   }
@@ -100,25 +86,25 @@ int8_t DeviceProtocol::connect(uint8_t remoteId[]) {
 
   _radio->setPALevel(RF24_PA_LOW);
 
-  _applySettings(&_pairSettings);
+  apply_settings(&_pairSettings);
 
   _radio->openWritingPipe(remoteId);
   _radio->openReadingPipe(1, _deviceId);
 
-  _flushBuffer();
+  flush_buffer();
 
   //Start writing
   _radio->stopListening();
 
   //send the device id to the remote, this announces who we are.
-  if(_forceSend(const_cast<uint8_t*>(_deviceId), 5, RC_TIMEOUT) != 0) {
+  if(force_send(const_cast<uint8_t*>(_deviceId), 5, RC_TIMEOUT) != 0) {
     return RC_ERROR_TIMEOUT;
   }
 
   _radio->startListening();
 
   //Wait until a response is made
-  if(_waitTillAvailable(RC_CONNECT_TIMEOUT) != 0) {
+  if(wait_till_available(RC_CONNECT_TIMEOUT) != 0) {
     return RC_ERROR_LOST_CONNECTION;
   }
 
@@ -127,24 +113,24 @@ int8_t DeviceProtocol::connect(uint8_t remoteId[]) {
   _radio->stopListening();
 
   //check if the connection was successful
-  if(connectSuccess == _NO) {
+  if(connectSuccess == _NACK) {
     return RC_ERROR_CONNECTION_REFUSED;
-  } else if(connectSuccess != _YES) {
+  } else if(connectSuccess != _ACK) {
     return RC_ERROR_BAD_DATA;
   }
 
-  _applySettings(_settings);
+  apply_settings(&_settings);
 
   _radio->setPALevel(RF24_PA_HIGH);
 
   _radio->startListening();
 
 
-  if(_settings->getEnableAck()) {
-    if(_settings->getEnableAckPayload()) {
+  if(_settings.getEnableAck()) {
+    if(_settings.getEnableAckPayload()) {
       _radio->writeAckPayload(1, &_TEST, 1);
 
-      if(_waitTillAvailable(RC_CONNECT_TIMEOUT) != 0) {
+      if(wait_till_available(RC_CONNECT_TIMEOUT) != 0) {
         _radio->stopListening();
         return RC_ERROR_LOST_CONNECTION;
       }
@@ -157,7 +143,7 @@ int8_t DeviceProtocol::connect(uint8_t remoteId[]) {
       }
 
     } else {
-      if(_waitTillAvailable(RC_CONNECT_TIMEOUT) != 0) {
+      if(wait_till_available(RC_CONNECT_TIMEOUT) != 0) {
         _radio->stopListening();
         return RC_ERROR_LOST_CONNECTION;
       }
@@ -170,7 +156,7 @@ int8_t DeviceProtocol::connect(uint8_t remoteId[]) {
       }
     }
   } else {
-    if(_waitTillAvailable(RC_CONNECT_TIMEOUT) != 0) {
+    if(wait_till_available(RC_CONNECT_TIMEOUT) != 0) {
       _radio->stopListening();
       return RC_ERROR_LOST_CONNECTION;
     }
@@ -195,7 +181,7 @@ int8_t DeviceProtocol::connect(uint8_t remoteId[]) {
   //We passed all of the tests, so we are connected.
   _isConnected = true;
 
-  for(uint8_t i = 0; i < _ID_SIZE; i++) {
+  for(uint8_t i = 0; i < 5; i++) {
     _remoteId[i] = remoteId[i];
   }
 
@@ -206,7 +192,7 @@ bool DeviceProtocol::isConnected() {
   return _isConnected;
 }
 
-int8_t DeviceProtocol::_checkPacket(void* returnData, uint8_t dataSize,
+int8_t DeviceProtocol::check_packet(void* returnData, uint8_t dataSize,
                                     void* telemetry, uint8_t telemetrySize) {
   if(!isConnected()) {
     return RC_ERROR_NOT_CONNECTED;
@@ -218,7 +204,7 @@ int8_t DeviceProtocol::_checkPacket(void* returnData, uint8_t dataSize,
     _radio->read(returnData, dataSize);
 
     //Check if the telemetry should be sent through the ackPayload
-    if(telemetry && _settings->getEnableAckPayload()) {
+    if(telemetry && _settings.getEnableAckPayload()) {
       _radio->writeAckPayload(pipe, telemetry, telemetrySize);
     }
 
@@ -228,8 +214,8 @@ int8_t DeviceProtocol::_checkPacket(void* returnData, uint8_t dataSize,
   return 0;
 }
 
-int8_t DeviceProtocol::_checkPacket(void* returnData, uint8_t dataSize) {
-  return _checkPacket(returnData, dataSize, NULL, 0);
+int8_t DeviceProtocol::check_packet(void* returnData, uint8_t dataSize) {
+  return check_packet(returnData, dataSize, NULL, 0);
 }
 
 int8_t DeviceProtocol::update(uint16_t channels[], uint8_t telemetry[]) {
@@ -241,16 +227,16 @@ int8_t DeviceProtocol::update(uint16_t channels[], uint8_t telemetry[]) {
   int8_t status = 0;
 
   //Load a transmission, and send an ack payload.
-  packetStatus = _checkPacket(channels,
-                              _settings->getNumChannels() * sizeof(uint16_t),
-                              telemetry, _settings->getPayloadSize());
+  packetStatus = check_packet(channels,
+                              _settings.getNumChannels() * sizeof(uint16_t),
+                              telemetry, _settings.getPayloadSize());
 
   //read through each transmission we have gotten since the last update
   while(packetStatus == 1) {
 
     //Load a transmission.
-    packetStatus = _checkPacket(channels,
-                                _settings->getNumChannels() * sizeof(uint16_t));
+    packetStatus = check_packet(channels,
+                                _settings.getNumChannels() * sizeof(uint16_t));
 
     //if the a packet was received
     if(packetStatus == 1) {
@@ -264,65 +250,4 @@ int8_t DeviceProtocol::update(uint16_t channels[], uint8_t telemetry[]) {
   }
 
   return status;
-}
-
-int8_t DeviceProtocol::_forceSend(void* buf, uint8_t size,
-                                  unsigned long timeout) {
-
-  unsigned long t = millis();
-  bool ack = false;
-  while(!ack && millis() - t < timeout) {
-    ack = _radio->write(buf, size);
-  }
-  if(!ack) {
-    return -1;
-  }
-
-  return 0;
-}
-
-int8_t DeviceProtocol::_waitTillAvailable(unsigned long timeout) {
-  unsigned long t = millis();
-  while(!_radio->available() && millis() - t < timeout) {
-    delay(16);
-  }
-  if(millis() - t >= timeout) {
-    return -1;
-  }
-
-  return 0;
-}
-
-void DeviceProtocol::_applySettings(RCSettings* settings) {
-
-  //Enable/disable Dynamic Payloads, and set payload size
-  if(settings->getEnableDynamicPayload()) {
-    _radio->enableDynamicPayloads();
-  } else {
-    _radio->disableDynamicPayloads();
-    _radio->setPayloadSize(settings->getPayloadSize());
-  }
-
-  //Enable/Disable autoack, and custom payloads.
-  _radio->setAutoAck(settings->getEnableAck());
-  if(settings->getEnableAck() && settings->getEnableAckPayload()) {
-    _radio->enableAckPayload();
-  }
-
-  //Set the channel
-  _radio->setChannel(settings->getStartChannel());
-
-  //Set the data rate
-  _radio->setDataRate(settings->getDataRate());
-
-  //Set the Retry delay.  I might add retry number as an option later.
-  _radio->setRetries(settings->getRetryDelay(), 15);
-}
-
-void DeviceProtocol::_flushBuffer() {
-  //read until there is no more data in the read buffer.
-  uint8_t tmp;
-  while(_radio->available()) {
-    _radio->read(&tmp, 1);
-  }
 }

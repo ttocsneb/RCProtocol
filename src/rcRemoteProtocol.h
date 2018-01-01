@@ -9,6 +9,7 @@
 #include <RF24.h>
 
 #include "rcSettings.h"
+#include "rcGlobal.h"
 
 #ifndef __RF24_H__
 #error "rcRemoteProtocol Requires the tmrh20 RF24 Library: https://github.com/nRF24/RF24"
@@ -16,37 +17,12 @@
 
 
 //Userdefined Constants
+//Global constants can be found in rcGlobal.h
 
-#ifndef RC_TIMEOUT
-#define RC_TIMEOUT 15000
-#endif
-
-#ifndef RC_CONNECT_TIMEOUT
-#define RC_CONNECT_TIMEOUT 2500
-#endif
 
 //Error constants
+//Global constants can be found in rcGlobal.h
 
-/**
- * Communications have been established, but since lost it
- */
-#define RC_ERROR_LOST_CONNECTION -11
-/**
- * No connection has been made
- */
-#define RC_ERROR_TIMEOUT -12
-/**
- * Data that was received does not match expectations
- */
-#define RC_ERROR_BAD_DATA -13
-/**
- * Receiver was refused to connect
- */
-#define RC_ERROR_CONNECTION_REFUSED -14
-/**
- * Transmitter is not connected, so the function could not operate properly
- */
-#define RC_ERROR_NOT_CONNECTED -21
 /**
  * Packet did not get to receiver
  */
@@ -60,7 +36,7 @@
 /**
  * Communication Protocol for transmitters
  */
-class RemoteProtocol {
+class RemoteProtocol : RCGlobal {
 public:
   /**
    * Save settings to non-volitile memory, such as EEPROM
@@ -168,21 +144,9 @@ public:
   int8_t update(uint16_t channels[], uint8_t telemetry[]);
 
 private:
-  const uint8_t _PAIR_ADDRESS[5] = {'P', 'a', 'i', 'r', '0'};
-  const uint8_t _YES = 0x6; //ACKNOWLEDGE
-  const uint8_t _NO = 0x15; //NEGATIVE ACKNOWLEDGE
-  const uint8_t _TEST = 0x2; //START OF TEXT
-
-  const uint8_t _STDPACKET = 0xA0;//A0-AF are reserved for standard packets.
-
 
   const uint8_t* _remoteId;
   uint8_t _deviceId[5];
-
-  RCSettings _settings;
-  RCSettings _pairSettings;
-
-  RF24* _radio;
 
   //update variables
   bool _isConnected;
@@ -204,14 +168,9 @@ private:
    * @return #RC_ERROR_PACKET_NOT_SENT
    * @return #RC_ERROR_NOT_CONNECTED
    */
-  int8_t _sendPacket(void* data, uint8_t dataSize, void* telemetry,
+  int8_t send_packet(void* data, uint8_t dataSize, void* telemetry,
                      uint8_t telemetrySize);
 
-  int8_t _forceSend(void* buf, uint8_t size, uint32_t timeout);
-  int8_t _waitTillAvailable(uint32_t timeout);
-  void _flushBuffer();
-
-  void _applySettings(RCSettings* settings);
 };
 
 #endif

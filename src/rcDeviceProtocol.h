@@ -9,49 +9,22 @@
 #include <RF24.h>
 
 #include "rcSettings.h"
+#include "rcGlobal.h"
 
 #ifndef __RF24_H__
 #error "rcDeviceProtocol Requires the tmrh20 RF24 Library: https://github.com/nRF24/RF24"
 #endif
 
-
 //Userdefined Constants
-
-#ifndef RC_TIMEOUT
-#define RC_TIMEOUT 15000
-#endif
-
-#ifndef RC_CONNECT_TIMEOUT
-#define RC_CONNECT_TIMEOUT 2500
-#endif
+//Global constants can be found in rcGlobal.h
 
 //Error Constants
-
-/**
- * Communications have been established, but since lost it
- */
-#define RC_ERROR_LOST_CONNECTION -11
-/**
- * No connection has been made
- */
-#define RC_ERROR_TIMEOUT -12
-/**
- * Data that was received does not match expectations
- */
-#define RC_ERROR_BAD_DATA -13
-/**
- * Transmitter refused to connect
- */
-#define RC_ERROR_CONNECTION_REFUSED -14
-/**
- * Receiver is not connected, so the function could not operate properly
- */
-#define RC_ERROR_NOT_CONNECTED -21
+//Global constatns can be found in rcGlobal.h
 
 /**
  * Communication Protocol for receivers
  */
-class DeviceProtocol {
+class DeviceProtocol : RCGlobal {
 public:
   /**
    * Save the transmitter id to non-volitile memory.
@@ -139,25 +112,11 @@ public:
    */
   int8_t update(uint16_t channels[], uint8_t telemetry[]);
 private:
-  //"Pair0" is not supported by the compiler for some reason, so an explicit array is used.
-  const uint8_t _PAIR_ADDRESS[5] = {'P', 'a', 'i', 'r', '0'};
-  const uint8_t _YES = 0x6; //ACKNOWLEDGE
-  const uint8_t _NO = 0x15; //NEGATIVE ACKNOWLEDGE
-  const uint8_t _TEST = 0x2; //Start Of Text
-
-  const uint8_t _STDPACKET = 0xA0;//A0-AF are reserved for standard packets.
-
-  RCSettings* _settings;
-  RCSettings _pairSettings;
-
-  RF24* _radio;
 
   const uint8_t* _deviceId;
   uint8_t _remoteId[5];
   bool _isConnected;
 
-  int8_t _forceSend(void* buf, uint8_t size, unsigned long timeout);
-  int8_t _waitTillAvailable(unsigned long timeout);
 
   /**
    * Check if a packet is available, and read it to returnData
@@ -172,13 +131,9 @@ private:
    * @return 0 if nothing is available
    * @return #RC_ERROR_NOT_CONNECTED if not connected
    */
-  int8_t _checkPacket(void* returnData, uint8_t dataSize, void* telemetry,
+  int8_t check_packet(void* returnData, uint8_t dataSize, void* telemetry,
                       uint8_t telemetrySize);
-  int8_t _checkPacket(void* returnData, uint8_t dataSize);
-
-  void _flushBuffer();
-
-  void _applySettings(RCSettings* settings);
+  int8_t check_packet(void* returnData, uint8_t dataSize);
 
 };
 

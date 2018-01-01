@@ -1,4 +1,3 @@
-
 #ifndef __RCGLOBAL_H__
 #define __RCGLOBAL_H__
 
@@ -6,6 +5,48 @@
 
 #include "rcSettings.h"
 
+//Global User defined constants
+
+#ifndef RC_TIMEOUT
+#define RC_TIMEOUT 15000
+#endif
+
+#ifndef RC_CONNECT_TIMEOUT
+#define RC_CONNECT_TIMEOUT 2500
+#endif
+
+//Global Error Constants
+
+/**
+ * Communications have been established, but since lost it
+ */
+#define RC_ERROR_LOST_CONNECTION -11
+/**
+ * No connection has been made
+ */
+#define RC_ERROR_TIMEOUT -12
+/**
+ * Data that was received does not match expectations
+ */
+#define RC_ERROR_BAD_DATA -13
+/**
+ * Receiver was refused to connect
+ */
+#define RC_ERROR_CONNECTION_REFUSED -14
+/**
+ * Transmitter is not connected, so the function could not operate properly
+ */
+#define RC_ERROR_NOT_CONNECTED -21
+
+/**
+ * Contains functions and variables used by both DeviceProtocal and
+ * RemoteProtocol.
+ *
+ * Everything in RCGlobal is protected, so only DeviceProtocol and
+ * RemoteProtocol have access to these members.
+ *
+ * You can also find Global constants in rcGlobal.h
+ */
 class RCGlobal {
 protected:
 
