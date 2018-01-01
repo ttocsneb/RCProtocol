@@ -6,6 +6,6 @@ RC Protocol allows a remote to pair with more than 1 rc device as well as the ab
 
 The Protocol is a library. It does not connect directly to any IO devices other than the tranceiver (RF24L01(+)), and add-ons through i²c.
 
-##Documentation
+## Documentation
 
 You can see a full documentation of the library at http://ttocsneb.com/projects/rcprotocol/docs/html/annotated.html
