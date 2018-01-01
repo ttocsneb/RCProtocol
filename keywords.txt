@@ -1,28 +1,60 @@
 #######################################
-# Syntax Coloring Map For ExampleLibrary
+# Syntax Coloring Map For rcProtocol
 #######################################
 
 #######################################
 # Datatypes (KEYWORD1)
 #######################################
 
-# Test	KEYWORD1
+# RemoteProtocol Datatypes
+
+saveSettings KEYWORD1
+checkIfValid KEYWORD1
+
+# DeviceProtocol Datatypes
+
+saveRemoteID KEYWORD1
 
 #######################################
 # Methods and Functions (KEYWORD2)
 #######################################
 
-#doSomething	KEYWORD2
+# DeviceProtocol and RemoteProtocol Functions
 
 begin KEYWORD2
 pair KEYWORD2
+isConnected KEYWORD2
 connect KEYWORD2
 update KEYWORD2
+
+# RCSettings Methods
+
+setSettigns KEYWORD2
+getSettings KEYWORD2
+setEnableDynamicPayload KEYWORD2
+getEnableDynamicPayload KEYWORD2
+setEnableAck KEYWORD2
+getEnableAck KEYWORD2
+setEnableAckPayload KEYWORD2
+getEnableAckPayload KEYWORD2
+setDataRate KEYWORD2
+getDataRate KEYWORD2
+setStartChannel KEYWORD2
+getStartChannel KEYWORD2
+setPayloadSize KEYWORD2
+getPayloadSize KEYWORD2
+setCommsFrequency KEYWORD2
+getCommsFrequency KEYWORD2
+setRetryDelay KEYWORD2
+getRetryDelay KEYWORD2
+setNumChannels KEYWORD2
+printSettings KEYWORD2
 
 #######################################
 # Instances (KEYWORD2)
 #######################################
 
+RCSettings KEYWORD2
 DeviceProtocol KEYWORD2
 RemoteProtocol KEYWORD2
 
@@ -30,11 +62,22 @@ RemoteProtocol KEYWORD2
 # Constants (LITERAL1)
 #######################################
 
+# Global Userdefined Literals
+
 RC_TIMEOUT LITERAL1
 RC_CONNECT_TIMEOUT LITERAL1
 
+# Global Literals
+
 RC_ERROR_LOST_CONNECTION LITERAL1
 RC_ERROR_TIMEOUT LITERAL1
+RC_ERROR_BAD_DATA LITERAL1
 RC_ERROR_CONNECTION_REFUSED LITERAL1
-RC_ERROR_CONNECTION_BAD_DATA LITERAL1
+RC_ERROR_NOT_CONNECTED LITERAL1
 
+# DeviceProtocol Literals
+
+# RemoteProtocol Literals
+
+RC_ERROR_PACKET_NOT_SENT LITERAL1
+RC_INFO_TICK_TOO_SHORT LITERAL1

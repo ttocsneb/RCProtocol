@@ -6,8 +6,10 @@
 #ifndef __RCREMOTEPROTOCOL_H__
 #define __RCREMOTEPROTOCOL_H__
 
-#include "Arduino.h"
-#include "RF24.h"
+#include <RF24.h>
+
+#include "rcSettings.h"
+#include "rcGlobal.h"
 
 #ifndef __RF24_H__
 #error "rcRemoteProtocol Requires the tmrh20 RF24 Library: https://github.com/nRF24/RF24"
@@ -15,84 +17,33 @@
 
 
 //Userdefined Constants
+//Global constants can be found in rcGlobal.h
 
-#ifndef RC_TIMEOUT
-#define RC_TIMEOUT 15000
-#endif
-
-#ifndef RC_CONNECT_TIMEOUT
-#define RC_CONNECT_TIMEOUT 2500
-#endif
 
 //Error constants
+//Global constants can be found in rcGlobal.h
 
 /**
- * Communications have been established, but since lost it
+ * Packet did not get to receiver
  */
-#define RC_ERROR_LOST_CONNECTION -1
+#define RC_ERROR_PACKET_NOT_SENT -22
 /**
- * No connection has been made
+ * The tick took longer than the wanted tick length.  See RCSettings.setCommsFrequency()
  */
-#define RC_ERROR_TIMEOUT -2
-/**
- * Data that was received does not match expectations
- */
-#define RC_ERROR_BAD_DATA -3
+#define RC_INFO_TICK_TOO_SHORT 21
 
-
-/** 
- * Settings positions
- *
- * The settings have a specific structure to them, these definitions are used
- * to organize them
- */ 
-
-/** 
- * SET_BOOLS
- * 
- * The first byte of settings contain several booleans:
- * - ENABLE_DYNAMIC_PAYLOAD
- * - ENABLE_ACK
- * - ENABLE_ACK_PAYLOAD
- */ 
-#define SET_BOOLS 0
-#define SET_ENABLE_DYNAMIC_PAYLOAD(x, y) (x==true?(y|1):(y&(~1)))
-#define GET_ENABLE_DYNAMIC_PAYLOAD(x) (x&1)
-#define SET_ENABLE_ACK(x, y) (x==true?(y|2):(y&(~2)))
-#define GET_ENABLE_ACK(x) ((x>>1)&1)
-#define SET_ENABLE_ACK_PAYLOAD(x, y) (x==true?(y|4):(y&(~4)))
-#define GET_ENABLE_ACK_PAYLOAD(x) ((x>>2)&1)
-
-/** 
- * SET_START_CHANNEL
- * 
- * The starting channel, a number between 0 and 127
- */
-#define SET_START_CHANNEL 1
-/**
- * SET_DATA_RATE
- * 
- * The Data rate, using enum values from rf24_datarate_e
- */
-#define SET_DATA_RATE 2
-/**
- * SET_PAYLOAD_SIZE
- * 
- * The size of the payload usually 32 or less
- */
-#define SET_PAYLOAD_SIZE 3
 
 /**
  * Communication Protocol for transmitters
  */
-class RemoteProtocol {
+class RemoteProtocol : RCGlobal {
 public:
   /**
    * Save settings to non-volitile memory, such as EEPROM
-   * 
+   *
    * The function should save both the id, and settings to some form of non-volitile memory.
    * This can be done in any way as long as the data can be retrieved, and checked.
-   * 
+   *
    * @param id 5 byte char array containing the ID of the receiver
    * @param settings 32 byte array of settings
    */
@@ -100,9 +51,9 @@ public:
   /**
    * Check if the given id has been paired, and load the corresponding settings into the
    * settings array.
-   * 
+   *
    * If the id is not found, the settings should not be changed, and return false.
-   * 
+   *
    * Here is a heavily simplified example:
    * @code
    * if(findID(id) == true) {
@@ -112,75 +63,114 @@ public:
    *   return false;
    * }
    * @endcode
-   * 
+   *
    * @param id 5 byte char array containing the ID of the receiver
    * @param settings 32 byte array to be loaded with the settings of the ID
-   * 
+   *
    * @return true if the check was successful
    */
   typedef bool (checkIfValid)(const uint8_t* id, uint8_t* settings);
 
   /**
    * Constructor
-   * 
+   *
    * Creates a new instance of the protocol. You create an instance and send a reference
    * to the RF24 driver as well as the id of the remote
-   * 
+   *
    * @param tranceiver A reference to the RF24 chip, this allows you to create your own instance,
    * allowing multi-platform support
    * @param remoteId The 5 byte char array of the remotes ID: ex "MyRmt"
    */
-  RemoteProtocol(RF24 *tranceiver, const uint8_t remoteId[]);
+  RemoteProtocol(RF24* tranceiver, const uint8_t remoteId[]);
 
   /**
    * Begin the Protocol
-   * 
+   *
    * @note There is no need to begin the RF24 driver, as this function does this for you
    */
   void begin();
 
   /**
    * Attempt to pair with a receiver
-   * 
+   *
    * @note The receiver you are trying to pair with should also be in pair mode
-   * 
+   *
    * @param saveSettings A function pointer to save the settings of the paired device.
+   *
+   * @return 0 if successful
+   * @return #RC_ERROR_TIMEOUT if no receiver was found.
+   * @return #RC_ERROR_LOST_CONNECTION if receiver stoped replying
    */
   int8_t pair(saveSettings saveSettings);
 
   /**
    * Attempt to connect with a previously paired device
-   * 
+   *
    * @note The receiver should have already been paired with the remote, and in connect mode
-   * 
+   *
    * @param checkIfValid A function pointer to check if the found device has been paired, and to
    * load the settings
+   *
+   * @return 0 if successful
+   * @return #RC_ERROR_TIMEOUT if no receiver was found.
+   * @return #RC_ERROR_LOST_CONNECTION if receiver stopped replying
+   * @return #RC_ERROR_CONNECTION_REFUSED if the receiver is not on the pair list.
+   * @return #RC_ERROR_BAD_DATA if the settings are not set properly on both devices
    */
   int8_t connect(checkIfValid checkIfValid);
 
   /**
-   * Update the communications with the currently connected device
-   * 
-   * @note We should have already be connected with a device before calling update, see connect()
+   * Check if the transmitter is connected with a receiver.
+   *
+   * @return true when connected.
    */
-  int8_t update();
+  bool isConnected();
 
+  /**
+   * Update the communications with the currently connected device
+   *
+   * This function holds until a specific amount of time has passed since
+   * it was last called to fulfill RCSettings.setCommsFrequency()
+   *
+   * @param channels unsigned int array of size RCSettings.setNumChannels()
+   *
+   * @return >= 0 if successful
+   * @return #RC_INFO_NO_ACK_PAYLOAD if no ack payload was received
+   * @return #RC_INFO_TICK_TOO_SHORT if RCSettings.setCommsFrequency() is
+   * too high
+   * @return #RC_ERROR_NOT_CONNECTED if there is no device connected
+   * @return #RC_ERROR_PACKET_NOT_SENT
+   */
+  int8_t update(uint16_t channels[], uint8_t telemetry[]);
 
 private:
-  const uint8_t _PAIR_ADDRESS[5] = {'P', 'a', 'i', 'r', '0'};
-  const uint8_t _YES = 0x6; //ACKNOWLEDGE
-  const uint8_t _NO = 0x15; //NEGATIVE ACKNOWLEDGE
-  const uint8_t _TEST = 0x2; //START OF TEXT
 
+  const uint8_t* _remoteId;
+  uint8_t _deviceId[5];
 
-  const uint8_t *_remoteId;
-  uint8_t _settings[32];
+  //update variables
+  bool _isConnected;
+  uint32_t _timer;
+  uint16_t _timerDelay;
 
-  RF24 *_radio;
+  /**
+   * Send a packet to the receiver
+   *
+   * When a packet is received, it will set returnData with the received data
+   *
+   * @param data data to write to receiver
+   * @param dataSize size in bytes of data
+   * @param telemetry data to be set if telemetry is received.
+   * @param telemetrySize size in bytes of telemetry
+   *
+   * @return >= 0 if successfull
+   * @return 1 if telemetry was updated
+   * @return #RC_ERROR_PACKET_NOT_SENT
+   * @return #RC_ERROR_NOT_CONNECTED
+   */
+  int8_t send_packet(void* data, uint8_t dataSize, void* telemetry,
+                     uint8_t telemetrySize);
 
-  int8_t _forceSend(void *buf, uint8_t size, uint32_t timeout);
-  int8_t _waitTillAvailable(uint32_t timeout);
-  void _flushBuffer();
 };
 
 #endif
