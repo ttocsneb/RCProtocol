@@ -6,7 +6,6 @@
 #ifndef __RCDEVICEPROTOCOL_H__
 #define __RCDEVICEPROTOCOL_H__
 
-#include <Arduino.h>
 #include <RF24.h>
 
 #include "rcSettings.h"

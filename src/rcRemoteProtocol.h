@@ -6,7 +6,6 @@
 #ifndef __RCREMOTEPROTOCOL_H__
 #define __RCREMOTEPROTOCOL_H__
 
-#include <Arduino.h>
 #include <RF24.h>
 
 #include "rcSettings.h"
