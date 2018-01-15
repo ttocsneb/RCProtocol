@@ -111,6 +111,13 @@ public:
    * @return #RC_ERROR_NOT_CONNECTED if not connected
    */
   int8_t update(uint16_t channels[], uint8_t telemetry[]);
+
+  /**
+   * Get pointer for the current settings
+   *
+   * @return settings
+   */
+  RCSettings* getSettings();
 private:
 
   const uint8_t* _deviceId;

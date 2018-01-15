@@ -251,3 +251,7 @@ int8_t DeviceProtocol::update(uint16_t channels[], uint8_t telemetry[]) {
 
   return status;
 }
+
+RCSettings* DeviceProtocol::getSettings() {
+  return &_settings;
+}

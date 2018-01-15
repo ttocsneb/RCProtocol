@@ -242,3 +242,7 @@ int8_t RemoteProtocol::update(uint16_t channels[], uint8_t telemetry[]) {
 
   return status;
 }
+
+RCSettings* RemoteProtocol::getSettings() {
+  return &_settings;
+}
