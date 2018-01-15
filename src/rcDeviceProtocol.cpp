@@ -237,30 +237,28 @@ int8_t DeviceProtocol::update(uint16_t channels[], uint8_t telemetry[]) {
   //read through each transmission we have gotten since the last update
   while(packetStatus == 1) {
 
+    //Covert packet to channels
 
-    //if the a packet was received
-    if(packetStatus == 1) {
+    //TODO somethings going on with this.
 
-      //Covert packet to channels
-
-      //Check if the packet is a channel packet
-      if((packet[0] & 0xF0) == _PACKET_CHANNELS) {
-
-        for(uint8_t i = 0; i < _settings.getNumChannels(); i++) {
-          channels[i] = ((packet[i * 2 + 1] << 8) & 0xFF00) | (packet[i * 2 + 2] &
-                        0x00FF);
-        }
-
-      }
+    //Check if the packet is a channel packet
+    if((packet[0] & 0xF0) == _PACKET_CHANNELS) {
 
       status = 1;
-    } else if(packetStatus < 0) {
-      status = packetStatus;
+
+      for(uint8_t i = 0; i < _settings.getNumChannels(); i++) {
+        channels[i] = ((packet[i * 2 + 1] << 8)) | (packet[i * 2 + 2]);
+      }
+
     }
 
     //Load a transmission.
     packetStatus = check_packet(packet,
                                 _settings.getPayloadSize() * sizeof(uint8_t));
+  }
+
+  if(packetStatus < 0) {
+    status = packetStatus;
   }
 
   return status;
