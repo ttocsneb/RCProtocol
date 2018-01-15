@@ -57,6 +57,8 @@ protected:
   const uint8_t _NACK = 0x15;
   const uint8_t _TEST = 0x02;
 
+  const uint8_t _PACKET_CHANNELS = 0xA0;
+
   RCSettings _settings;
   RCSettings _pairSettings;
 

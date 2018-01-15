@@ -223,30 +223,44 @@ int8_t DeviceProtocol::update(uint16_t channels[], uint8_t telemetry[]) {
     return RC_ERROR_NOT_CONNECTED;
   }
 
+  uint8_t packet[_settings.getPayloadSize()];
+
   int8_t packetStatus = 0;
   int8_t status = 0;
 
   //Load a transmission, and send an ack payload.
-  packetStatus = check_packet(channels,
-                              _settings.getNumChannels() * sizeof(uint16_t),
+  packetStatus = check_packet(packet,
+                              _settings.getPayloadSize() * sizeof(uint8_t),
                               telemetry, _settings.getPayloadSize());
+
 
   //read through each transmission we have gotten since the last update
   while(packetStatus == 1) {
 
-    //Load a transmission.
-    packetStatus = check_packet(channels,
-                                _settings.getNumChannels() * sizeof(uint16_t));
 
     //if the a packet was received
     if(packetStatus == 1) {
 
-      //Do stuff when a packet was received
+      //Covert packet to channels
+
+      //Check if the packet is a channel packet
+      if((packet[0] & 0xF0) == _PACKET_CHANNELS) {
+
+        for(uint8_t i = 0; i < _settings.getNumChannels(); i++) {
+          channels[i] = ((packet[i * 2 + 1] << 8) & 0xFF00) | (packet[i * 2 + 2] &
+                        0x00FF);
+        }
+
+      }
 
       status = 1;
     } else if(packetStatus < 0) {
       status = packetStatus;
     }
+
+    //Load a transmission.
+    packetStatus = check_packet(packet,
+                                _settings.getPayloadSize() * sizeof(uint8_t));
   }
 
   return status;
