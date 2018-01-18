@@ -238,7 +238,7 @@ int8_t RemoteProtocol::update(uint16_t channels[], uint8_t telemetry[]) {
 
   //Send the packet.
   int8_t status = send_packet(packet,
-                              sizeof(uint8_t) * _settings.getNumChannels(),
+                              sizeof(uint8_t) * _settings.getPayloadSize(),
                               telemetry, sizeof(uint8_t) * _settings.getPayloadSize());
 
 
