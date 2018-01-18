@@ -216,20 +216,35 @@ int8_t RemoteProtocol::send_packet(void* data, uint8_t dataSize,
 
 int8_t RemoteProtocol::update(uint16_t channels[], uint8_t telemetry[]) {
 
-  //const uint8_t PACKET_BEGIN = 1;
-
-
   if(!isConnected()) {
     return RC_ERROR_NOT_CONNECTED;
   }
 
+  uint8_t packet[_settings.getPayloadSize()];
+
+  uint8_t i = 0;
+
+  //Set the Packet type
+  packet[i++] = _PACKET_CHANNELS + 0;
+  //Set the payload data
+  for(; i < min(_settings.getPayloadSize(), _settings.getNumChannels() * 2 + 1);
+      i += 2) {
+    packet[i] = (channels[(i - 1) / 2] >> 8) & 0x00FF;
+    packet[i + 1] = channels[(i - 1) / 2] & 0x00FF;
+  }
+  //Set the rest of the packet to 0.
+  for(; i < _settings.getPayloadSize(); i++) {
+    packet[i] = 0;
+  }
+
+
   //Send the packet.
-  int8_t status = send_packet(channels,
-                              sizeof(uint16_t) * _settings.getNumChannels(),
+  int8_t status = send_packet(packet,
+                              sizeof(uint8_t) * _settings.getPayloadSize(),
                               telemetry, sizeof(uint8_t) * _settings.getPayloadSize());
 
 
-  //Check if the frequency delay has already passed.
+  //If the tick was too long, and there are no errors, set the return to Tick To Short
   if(millis() - _timer > _timerDelay && status >= 0) {
     status = RC_INFO_TICK_TOO_SHORT;
   }

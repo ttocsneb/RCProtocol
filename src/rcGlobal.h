@@ -52,10 +52,15 @@ protected:
 
   RCGlobal();
 
-  const uint8_t _PAIR_ADDRESS[5] = {'P', 'a', 'i', 'r', '0'};
+  const uint8_t _PAIR_ADDRESS[5] = {'P', 'a', 'i', 'r', '0'};//Pair0: 0x50 61 69 72 30
   const uint8_t _ACK = 0x06;
   const uint8_t _NACK = 0x15;
   const uint8_t _TEST = 0x02;
+
+  const uint8_t _PACKET_CHANNELS = 0xA0;
+  const uint8_t _PACKET_UPDATE_TRANS_SETTINGS = 0xB1;//TODO: Implement
+  const uint8_t _PACKET_UPDATE_RECVR_SETTINGS = 0xB2;//TODO: Implement
+  const uint8_t _PACKET_DISCONNECT = 0xC0;//TODO: Implement
 
   RCSettings _settings;
   RCSettings _pairSettings;
