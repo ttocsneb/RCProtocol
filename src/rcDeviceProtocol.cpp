@@ -239,8 +239,6 @@ int8_t DeviceProtocol::update(uint16_t channels[], uint8_t telemetry[]) {
 
     //Covert packet to channels
 
-    //TODO somethings going on with this.
-
     //Check if the packet is a channel packet
     if((packet[0] & 0xF0) == _PACKET_CHANNELS) {
 
