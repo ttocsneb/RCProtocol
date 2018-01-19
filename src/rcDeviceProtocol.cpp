@@ -248,6 +248,16 @@ int8_t DeviceProtocol::update(uint16_t channels[], uint8_t telemetry[]) {
         channels[i] = ((packet[i * 2 + 1] << 8)) | (packet[i * 2 + 2]);
       }
 
+      //If the packet is a Disconnect Packet
+    } else if(packet[0] == _PACKET_DISCONNECT) {
+      if(!_settings.getEnableAck()) {
+        _radio->stopListening();
+        delay(50);
+        _radio->write(const_cast<uint8_t*>(&_ACK), 1);
+        _radio->startListening();
+      }
+
+      _isConnected = false;
     }
 
     //Load a transmission.

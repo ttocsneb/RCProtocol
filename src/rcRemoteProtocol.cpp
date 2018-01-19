@@ -198,7 +198,7 @@ int8_t RemoteProtocol::send_packet(void* data, uint8_t dataSize,
     if(_radio->write(data, dataSize)) {
 
       //Check if a payload was sent back.
-      if(_radio->isAckPayloadAvailable()) {
+      if(telemetry && _radio->isAckPayloadAvailable()) {
         //set telemetry to whatever was sent back
         _radio->read(telemetry, telemetrySize);
         return 1;
@@ -254,6 +254,32 @@ int8_t RemoteProtocol::update(uint16_t channels[], uint8_t telemetry[]) {
   }
 
   _timer = millis();
+
+  return status;
+}
+
+int8_t RemoteProtocol::disconnect() {
+  int8_t status = send_packet((const_cast<uint8_t*>(&_PACKET_DISCONNECT)), 1);
+
+  if(status >= 0) {
+    if(!_settings.getEnableAck()) {
+      _radio->startListening();
+      if(wait_till_available(RC_CONNECT_TIMEOUT) == 0) {
+
+        uint8_t ack = 0;
+        _radio->read(&ack, 1);
+
+        if(ack != _ACK) {
+          return RC_ERROR_PACKET_NOT_SENT;
+        }
+      } else {
+        return RC_ERROR_PACKET_NOT_SENT;
+      }
+      _radio->stopListening();
+    }
+
+    _isConnected = false;
+  }
 
   return status;
 }

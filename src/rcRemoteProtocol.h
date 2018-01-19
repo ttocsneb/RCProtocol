@@ -136,7 +136,8 @@ public:
    * returns 1.
    *
    * @param channels array of size RCSettings.setNumChannels() to send
-   * @param telemetry array of size RCSettings.setPayloadSize() to receive
+   * @param telemetry optional array of size RCSettings.setPayloadSize() to receive
+   * data from the Receiver.
    *
    * @return >= 0 if successful
    * @return 1 if telemetry was received
@@ -145,7 +146,19 @@ public:
    * @return #RC_ERROR_NOT_CONNECTED if there is no device connected
    * @return #RC_ERROR_PACKET_NOT_SENT
    */
-  int8_t update(uint16_t channels[], uint8_t telemetry[]);
+  int8_t update(uint16_t channels[], uint8_t telemetry[] = NULL);
+
+  /**
+   * Disconnect From the currently conencted device
+   *
+   * @warning Once you disconnect, you can't reconnect until both devices
+   * call the connect() command.
+   *
+   * @return 0 if successful
+   * @return #RC_ERROR_NOT_CONNECTED
+   * @return #RC_ERROR_PACKET_NOT_SENT
+   */
+  int8_t disconnect();
 
   /**
    * Get pointer for the current settings
@@ -179,8 +192,8 @@ private:
    * @return #RC_ERROR_PACKET_NOT_SENT
    * @return #RC_ERROR_NOT_CONNECTED
    */
-  int8_t send_packet(void* data, uint8_t dataSize, void* telemetry,
-                     uint8_t telemetrySize);
+  int8_t send_packet(void* data, uint8_t dataSize, void* telemetry = NULL,
+                     uint8_t telemetrySize = 0);
 
 };
 
