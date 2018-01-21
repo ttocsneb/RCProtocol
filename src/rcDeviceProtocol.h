@@ -36,6 +36,31 @@ public:
    * @param id 5 byte char array
    */
   typedef void (saveRemoteID)(const uint8_t* id);
+  /**
+   * Load the transmitter id from non-volitile memory.
+   *
+   * Load the transmitter id set from saveRemoteID() into id
+   *
+   * @param id 5 byte array to put remote id in.
+   */
+  typedef void (loadRemoteID)(uint8_t* id);
+  /**
+   * Check if the device was previously connected to the remote.
+   *
+   * This checks the data set from setConnected(), and should be non-volitile
+   *
+   * @return true if connected.
+   */
+  typedef bool (checkConnected)();
+  /**
+   * Set whether the device is connected to the remote.
+   *
+   * @note This should be non-volitile, meaning the value set by this should
+   * remain after a power cycle or reset
+   *
+   * @param connected true if connected, false if not.
+   */
+  typedef void (setConnected)(bool connected);
 
   /**
    * Constructor
@@ -52,11 +77,22 @@ public:
   /**
    * Begin the Protocol
    *
-   * @note There is no need to begin the RF24 driver, as this function already does this for you
+   * If the system power cycled or reset while in use, it will try to reconnect
+   * immidiately.
+   *
+   * @note There is no need to begin the RF24 driver, as this function already
+   * does this for you
    *
    * @param settings RCSettings
+   * @param checkConnected checkConnected()
+   * @param loadRemoteID loadRemoteID()
+   *
+   * @return 0
+   * @return 1 if reconnected to remote
+   * @return -1 if unable to reconnect to remtoe
    */
-  void begin(RCSettings* settings);
+  int8_t begin(RCSettings* settings, checkConnected checkConnected,
+               loadRemoteID loadRemoteID);
 
   /**
    * Attempt to pair with a transmitter
@@ -66,6 +102,7 @@ public:
    * @param saveRemoteID A function pointer to save the id of the transmitter.
    *
    * @return 0 if successful
+   * @return #RC_ERROR_ALREADY_CONNECTED if already connected to remote
    * @return #RC_ERROR_TIMEOUT if no transmitter was found.
    * @return #RC_ERROR_LOST_CONNECTION if transmitter stopped replying
    */
@@ -84,17 +121,18 @@ public:
    * @note The transmitter you are trying to connect with should also be in connect mode,
    * as well as paired with this device
    *
-   * @param remoteId a 5 byte char array of the remote you are trying to pair with, this should
-   * come from DeviceProtocol::saveRemoteID
+   * @param loadRemoteID loadRemoteID()
+   * @param setConnected setConnected()
    *
    * @return 0 if successful
+   * @return #RC_ERROR_ALREADY_CONNECTED if already connected to remote
    * @return #RC_ERROR_TIMEOUT if no transmitter was found
    * @return #RC_ERROR_LOST_CONNECTION if transmitter stopped replying
    * @return #RC_ERROR_CONNECTION_REFUSED if the transmitter refused to connect
    * @return #RC_ERROR_BAD_DATA if the settings are not properly set, or
    * the transmitter sent unexpected data
    */
-  int8_t connect(uint8_t remoteId[]);
+  int8_t connect(loadRemoteID loadRemoteID, setConnected setConnected);
 
   /**
    * Update the communications with the currently connected device
@@ -110,7 +148,8 @@ public:
    * @return 0 if nothing happened
    * @return #RC_ERROR_NOT_CONNECTED if not connected
    */
-  int8_t update(uint16_t channels[], uint8_t telemetry[]);
+  int8_t update(uint16_t channels[], uint8_t telemetry[],
+                setConnected setConnected);
 
   /**
    * Get pointer for the current settings

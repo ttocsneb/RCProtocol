@@ -35,6 +35,8 @@ public:
    * Dynamic payloads don't have a specific payload size, and will
    * vary from transaction to transaction.
    *
+   * @warning DynamicPayloads are not currently implemented
+   *
    * If you disable dynamic payloads, see setPayloadSize()
    *
    * Uses `0b00000001` of byte 0
@@ -79,6 +81,8 @@ public:
    *
    * Custom ack payloads allow acknowledgments to be filled with
    * custom data. setEnableAck() needs to be enabled for this to work.
+   *
+   * @warning Disabling AckPayloads is not yet implemented
    *
    * This should be set to true to enable telemetry data.
    *
@@ -150,6 +154,8 @@ public:
    * Set the size of the payload in bytes
    *
    * @note This can't be set higher than 32
+   *
+   * @warning Values other than 32 are not fully implemented, use at your own risk!
    *
    * Uses byte 2
    *
@@ -224,7 +230,7 @@ public:
    * Set the number of channels in a packet, each channel uses 2 bytes
    * default, so a 32 byte packet can hold up to 15 channels.
    *
-   * In the future, I may support multi-packet transmissions to allow more
+   * @note In the future, I may support multi-packet transmissions to allow more
    * channels.
    *
    * Uses byte 5
