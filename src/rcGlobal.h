@@ -57,6 +57,7 @@ protected:
   RCGlobal();
 
   const uint8_t _PAIR_ADDRESS[5] = {'P', 'a', 'i', 'r', '0'};//Pair0: 0x50 61 69 72 30
+  const uint8_t _DISCONNECT[5] = {0, 0, 0, 0, 0};//\0\0\0\0\0: 0x00 00 00 00 00
   const uint8_t _ACK = 0x06;
   const uint8_t _NACK = 0x15;
   const uint8_t _TEST = 0x02;

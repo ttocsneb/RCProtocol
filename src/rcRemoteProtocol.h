@@ -72,18 +72,18 @@ public:
   typedef bool (checkIfValid)(const uint8_t* id, uint8_t* settings);
   /**
    * Load the id of the last connected device.
-   * 
+   *
    * This should load the id from setLastConnection() into id
-   * 
-   * @note This is used in begin(), so any classes used by this function 
+   *
+   * @note This is used in begin(), so any classes used by this function
    * should be setup before begin() is called
-   * 
+   *
    * @param id 5 byte array to put the loaded id in
    */
   typedef void (getLastConnection)(uint8_t* id);
   /**
    * Save the id of the current device to non-volitile memory.
-   * 
+   *
    * @param id 5 byte array to save the id.
    */
   typedef void (setLastConnection)(const uint8_t* id);
@@ -103,16 +103,16 @@ public:
   /**
    * Begin the Protocol
    *
-   * When begin is called, it will check if it was disconnected before 
+   * When begin is called, it will check if it was disconnected before
    * it last shutdown.  If it did not disconnect, It will try to reconnect.
-   * 
-   * 
-   * @note There is no need to begin the RF24 driver, as this function does 
+   *
+   *
+   * @note There is no need to begin the RF24 driver, as this function does
    * this for you
-   * 
+   *
    * @param getLastConnection Used for emergency reconnects
    * @param checkIfValid Used for emergency reconnects
-   * 
+   *
    * @returns 0 if successful
    * @returns 1 if a previous connection was re-established
    * @returns -1 if a previous connection was NOT re-established
@@ -148,7 +148,7 @@ public:
    * @return #RC_ERROR_BAD_DATA if the settings are not set properly on both devices
    * @return #RC_ERROR_ALREADY_CONNECTED if the remote is already connected to a device.
    */
-  int8_t connect(checkIfValid checkIfValid);
+  int8_t connect(checkIfValid checkIfValid, setLastConnection setLastConnection);
 
   /**
    * Check if the transmitter is connected with a receiver.
@@ -189,7 +189,7 @@ public:
    * @return #RC_ERROR_NOT_CONNECTED
    * @return #RC_ERROR_PACKET_NOT_SENT
    */
-  int8_t disconnect();
+  int8_t disconnect(setLastConnection setLastConnection);
 
   /**
    * Get pointer for the current settings

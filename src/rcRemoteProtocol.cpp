@@ -18,7 +18,8 @@ RemoteProtocol::RemoteProtocol(RF24* tranceiver, const uint8_t remoteId[]) {
   _remoteId = remoteId;
 }
 
-int8_t RemoteProtocol::begin(RemoteProtocol::getLastConnection getLastConnection, RemoteProtocol::checkIfValid checkIfValid) {
+int8_t RemoteProtocol::begin(RemoteProtocol::getLastConnection
+                             getLastConnection, RemoteProtocol::checkIfValid checkIfValid) {
   _radio->begin();
   _radio->stopListening();
 
@@ -37,7 +38,7 @@ int8_t RemoteProtocol::begin(RemoteProtocol::getLastConnection getLastConnection
   //If the last connection was unexpectedly cut-off, try re-establishing connection
   if(!isEmpty) {
     uint8_t settings[32];
-    
+
     if(checkIfValid(lastId, settings)) {
 
       //copy lastId to _deviceId
@@ -141,7 +142,8 @@ int8_t RemoteProtocol::pair(RemoteProtocol::saveSettings saveSettings) {
   return 0;
 }
 
-int8_t RemoteProtocol::connect(RemoteProtocol::checkIfValid checkIfValid) {
+int8_t RemoteProtocol::connect(RemoteProtocol::checkIfValid checkIfValid,
+                               RemoteProtocol::setLastConnection setLastConnection) {
   if(isConnected()) {
     return RC_ERROR_ALREADY_CONNECTED;
   }
@@ -249,6 +251,8 @@ int8_t RemoteProtocol::connect(RemoteProtocol::checkIfValid checkIfValid) {
     _radio->stopListening();
   }
 
+  setLastConnection(_deviceId);
+
   //We passed all of the tests, so we are connected.
   _isConnected = true;
   //set timer delay as a variable once so it doesn't need to be recalculated
@@ -330,7 +334,8 @@ int8_t RemoteProtocol::update(uint16_t channels[], uint8_t telemetry[]) {
   return status;
 }
 
-int8_t RemoteProtocol::disconnect() {
+int8_t RemoteProtocol::disconnect(RemoteProtocol::setLastConnection
+                                  setLastConnection) {
   int8_t status = send_packet((const_cast<uint8_t*>(&_PACKET_DISCONNECT)), 1);
 
   if(status >= 0) {
@@ -351,6 +356,8 @@ int8_t RemoteProtocol::disconnect() {
     }
 
     _isConnected = false;
+
+    setLastConnection(_DISCONNECT);
   }
 
   return status;
