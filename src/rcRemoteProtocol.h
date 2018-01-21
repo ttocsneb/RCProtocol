@@ -113,9 +113,9 @@ public:
    * @param getLastConnection Used for emergency reconnects
    * @param checkIfValid Used for emergency reconnects
    *
-   * @returns 0 if successful
-   * @returns 1 if a previous connection was re-established
-   * @returns -1 if a previous connection was NOT re-established
+   * @return 0
+   * @return 1 if a previous connection was re-established
+   * @return -1 if a previous connection was NOT re-established
    */
   int8_t begin(getLastConnection getLastConnection, checkIfValid checkIfValid);
 

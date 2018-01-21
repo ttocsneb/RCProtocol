@@ -15,14 +15,53 @@ DeviceProtocol::DeviceProtocol(RF24* tranceiver, const uint8_t deviceId[]) {
 
 }
 
-void DeviceProtocol::begin(RCSettings* settings) {
+int8_t DeviceProtocol::begin(RCSettings* settings,
+                             DeviceProtocol::checkConnected checkConnected,
+                             DeviceProtocol::loadRemoteID loadRemoteID) {
   _settings.setSettings(settings->getSettings());
 
   _radio->begin();
-  _radio->stopListening();
+
+  //If there was a previous connection, try to re-establish it.
+  if(checkConnected()) {
+    apply_settings(&_settings);
+
+    //Load the Remote ID.
+    uint8_t id[5];
+    loadRemoteID(id);
+
+    _radio->openWritingPipe(id);
+    _radio->openReadingPipe(1, _deviceId);
+
+    _radio->startListening();
+
+    /*If the remote is still connected, it should be sending regular data
+    _settings.getCommsFrequency() per second, so we will wait for 3 time
+    periods before giving up.*/
+    if(wait_till_available(round(3000.0 / _settings.getCommsFrequency())) == -1) {
+      return -1;
+    }
+
+    flush_buffer();
+
+    for(uint8_t i = 0; i < 5; i++) {
+      _remoteId[i] = id[i];
+    }
+    _isConnected = true;
+
+
+    return 1;
+
+  }
+
+  return 0;
 }
 
 int8_t DeviceProtocol::pair(DeviceProtocol::saveRemoteID saveRemoteID) {
+  if(isConnected()) {
+    return RC_ERROR_ALREADY_CONNECTED;
+  }
+
   uint8_t radioId[5];
   bool sent = false;
 
@@ -76,9 +115,17 @@ int8_t DeviceProtocol::pair(DeviceProtocol::saveRemoteID saveRemoteID) {
   return 0;
 }
 
-int8_t DeviceProtocol::connect(uint8_t remoteId[]) {
+int8_t DeviceProtocol::connect(DeviceProtocol::loadRemoteID loadRemoteID,
+                               DeviceProtocol::setConnected setConnected) {
+  if(isConnected()) {
+    return RC_ERROR_ALREADY_CONNECTED;
+  }
+
   uint8_t connectSuccess = 0;
   uint8_t test = 0;
+
+  uint8_t remoteId[5];
+  loadRemoteID(remoteId);
 
   //reset connected because if we fail connecting, we will not be connected
   //to anything.
@@ -180,6 +227,7 @@ int8_t DeviceProtocol::connect(uint8_t remoteId[]) {
 
   //We passed all of the tests, so we are connected.
   _isConnected = true;
+  setConnected(true);
 
   for(uint8_t i = 0; i < 5; i++) {
     _remoteId[i] = remoteId[i];
@@ -218,7 +266,8 @@ int8_t DeviceProtocol::check_packet(void* returnData, uint8_t dataSize) {
   return check_packet(returnData, dataSize, NULL, 0);
 }
 
-int8_t DeviceProtocol::update(uint16_t channels[], uint8_t telemetry[]) {
+int8_t DeviceProtocol::update(uint16_t channels[], uint8_t telemetry[],
+                              DeviceProtocol::setConnected setConnected) {
   if(!isConnected()) {
     return RC_ERROR_NOT_CONNECTED;
   }
@@ -258,6 +307,7 @@ int8_t DeviceProtocol::update(uint16_t channels[], uint8_t telemetry[]) {
       }
 
       _isConnected = false;
+      setConnected(false);
 
       //If the packet is a Reconnect Packet
     } else if(packet[0] == _PACKET_RECONNECT) {
