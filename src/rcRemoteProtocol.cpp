@@ -26,10 +26,10 @@ int8_t RemoteProtocol::begin(RemoteProtocol::getLastConnection
   uint8_t lastId[5];
   getLastConnection(lastId);
 
-  //check if the id is /0/0/0/0/0 (There was no interrupted connection)
+  //check if the id is _DISCONNECT
   bool isEmpty = true;
   for(uint8_t i = 0; i < 5; i++) {
-    if(lastId[i] != 0) {
+    if(lastId[i] != _DISCONNECT[i]) {
       isEmpty = false;
       break;
     }
@@ -42,8 +42,7 @@ int8_t RemoteProtocol::begin(RemoteProtocol::getLastConnection
     if(checkIfValid(lastId, settings)) {
 
       //copy lastId to _deviceId
-      uint8_t i = 5;
-      while(i--) {
+      for(uint8_t i = 0; i < 5; i++) {
         _deviceId[i] = lastId[i];
       }
 
