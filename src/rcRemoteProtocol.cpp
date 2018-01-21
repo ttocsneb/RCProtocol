@@ -18,14 +18,82 @@ RemoteProtocol::RemoteProtocol(RF24* tranceiver, const uint8_t remoteId[]) {
   _remoteId = remoteId;
 }
 
-void RemoteProtocol::begin() {
+int8_t RemoteProtocol::begin(RemoteProtocol::getLastConnection
+                             getLastConnection, RemoteProtocol::checkIfValid checkIfValid) {
   _radio->begin();
-
   _radio->stopListening();
+
+  uint8_t lastId[5];
+  getLastConnection(lastId);
+
+  //check if the id is _DISCONNECT
+  bool isEmpty = true;
+  for(uint8_t i = 0; i < 5; i++) {
+    if(lastId[i] != _DISCONNECT[i]) {
+      isEmpty = false;
+      break;
+    }
+  }
+
+  //If the last connection was unexpectedly cut-off, try re-establishing connection
+  if(!isEmpty) {
+    uint8_t settings[32];
+
+    if(checkIfValid(lastId, settings)) {
+
+      //copy lastId to _deviceId
+      for(uint8_t i = 0; i < 5; i++) {
+        _deviceId[i] = lastId[i];
+      }
+
+      _settings.setSettings(settings);
+      apply_settings(&_settings);
+
+      _radio->openWritingPipe(_deviceId);
+      _radio->openReadingPipe(1, _remoteId);
+
+      if(!_settings.getEnableAck()) {
+        //Re-connect in noAck mode
+
+        _radio->write(const_cast<uint8_t*>(&_PACKET_RECONNECT), 1);
+
+        _radio->startListening();
+        if(wait_till_available(100) == -1) {
+          return -1;
+        }
+
+        uint8_t status;
+        _radio->read(&status, 1);
+
+        _radio->stopListening();
+
+        if(status == _ACK) {
+          _isConnected = true;
+          return 1;
+        }
+
+      } else {
+        if(force_send(const_cast<uint8_t*>(&_PACKET_RECONNECT), 1, 100) == 0) {
+          _isConnected = true;
+          return 1;
+        }
+      }
+    }
+
+    return -1;
+
+  }
+
+
+  return 0;
 
 }
 
 int8_t RemoteProtocol::pair(RemoteProtocol::saveSettings saveSettings) {
+  if(isConnected()) {
+    return RC_ERROR_ALREADY_CONNECTED;
+  }
+
   uint8_t settings[32];
   uint8_t deviceId[5];
 
@@ -73,7 +141,12 @@ int8_t RemoteProtocol::pair(RemoteProtocol::saveSettings saveSettings) {
   return 0;
 }
 
-int8_t RemoteProtocol::connect(RemoteProtocol::checkIfValid checkIfValid) {
+int8_t RemoteProtocol::connect(RemoteProtocol::checkIfValid checkIfValid,
+                               RemoteProtocol::setLastConnection setLastConnection) {
+  if(isConnected()) {
+    return RC_ERROR_ALREADY_CONNECTED;
+  }
+
   uint8_t settings[32];
   uint8_t testData = 0;
   bool valid = false;
@@ -177,6 +250,8 @@ int8_t RemoteProtocol::connect(RemoteProtocol::checkIfValid checkIfValid) {
     _radio->stopListening();
   }
 
+  setLastConnection(_deviceId);
+
   //We passed all of the tests, so we are connected.
   _isConnected = true;
   //set timer delay as a variable once so it doesn't need to be recalculated
@@ -198,7 +273,7 @@ int8_t RemoteProtocol::send_packet(void* data, uint8_t dataSize,
     if(_radio->write(data, dataSize)) {
 
       //Check if a payload was sent back.
-      if(_radio->isAckPayloadAvailable()) {
+      if(telemetry && _radio->isAckPayloadAvailable()) {
         //set telemetry to whatever was sent back
         _radio->read(telemetry, telemetrySize);
         return 1;
@@ -216,20 +291,35 @@ int8_t RemoteProtocol::send_packet(void* data, uint8_t dataSize,
 
 int8_t RemoteProtocol::update(uint16_t channels[], uint8_t telemetry[]) {
 
-  //const uint8_t PACKET_BEGIN = 1;
-
-
   if(!isConnected()) {
     return RC_ERROR_NOT_CONNECTED;
   }
 
+  uint8_t packet[_settings.getPayloadSize()];
+
+  uint8_t i = 0;
+
+  //Set the Packet type
+  packet[i++] = _PACKET_CHANNELS + 0;
+  //Set the payload data
+  for(; i < min(_settings.getPayloadSize(), _settings.getNumChannels() * 2 + 1);
+      i += 2) {
+    packet[i] = (channels[(i - 1) / 2] >> 8) & 0x00FF;
+    packet[i + 1] = channels[(i - 1) / 2] & 0x00FF;
+  }
+  //Set the rest of the packet to 0.
+  for(; i < _settings.getPayloadSize(); i++) {
+    packet[i] = 0;
+  }
+
+
   //Send the packet.
-  int8_t status = send_packet(channels,
-                              sizeof(uint16_t) * _settings.getNumChannels(),
+  int8_t status = send_packet(packet,
+                              sizeof(uint8_t) * _settings.getPayloadSize(),
                               telemetry, sizeof(uint8_t) * _settings.getPayloadSize());
 
 
-  //Check if the frequency delay has already passed.
+  //If the tick was too long, and there are no errors, set the return to Tick To Short
   if(millis() - _timer > _timerDelay && status >= 0) {
     status = RC_INFO_TICK_TOO_SHORT;
   }
@@ -241,4 +331,37 @@ int8_t RemoteProtocol::update(uint16_t channels[], uint8_t telemetry[]) {
   _timer = millis();
 
   return status;
+}
+
+int8_t RemoteProtocol::disconnect(RemoteProtocol::setLastConnection
+                                  setLastConnection) {
+  int8_t status = send_packet((const_cast<uint8_t*>(&_PACKET_DISCONNECT)), 1);
+
+  if(status >= 0) {
+    if(!_settings.getEnableAck()) {
+      _radio->startListening();
+      if(wait_till_available(RC_CONNECT_TIMEOUT) == 0) {
+
+        uint8_t ack = 0;
+        _radio->read(&ack, 1);
+
+        if(ack != _ACK) {
+          return RC_ERROR_PACKET_NOT_SENT;
+        }
+      } else {
+        return RC_ERROR_PACKET_NOT_SENT;
+      }
+      _radio->stopListening();
+    }
+
+    _isConnected = false;
+
+    setLastConnection(_DISCONNECT);
+  }
+
+  return status;
+}
+
+RCSettings* RemoteProtocol::getSettings() {
+  return &_settings;
 }

@@ -70,6 +70,23 @@ public:
    * @return true if the check was successful
    */
   typedef bool (checkIfValid)(const uint8_t* id, uint8_t* settings);
+  /**
+   * Load the id of the last connected device.
+   *
+   * This should load the id from setLastConnection() into id
+   *
+   * @note This is used in begin(), so any classes used by this function
+   * should be setup before begin() is called
+   *
+   * @param id 5 byte array to put the loaded id in
+   */
+  typedef void (getLastConnection)(uint8_t* id);
+  /**
+   * Save the id of the current device to non-volitile memory.
+   *
+   * @param id 5 byte array to save the id.
+   */
+  typedef void (setLastConnection)(const uint8_t* id);
 
   /**
    * Constructor
@@ -86,9 +103,21 @@ public:
   /**
    * Begin the Protocol
    *
-   * @note There is no need to begin the RF24 driver, as this function does this for you
+   * When begin is called, it will check if it was disconnected before
+   * it last shutdown.  If it did not disconnect, It will try to reconnect.
+   *
+   *
+   * @note There is no need to begin the RF24 driver, as this function does
+   * this for you
+   *
+   * @param getLastConnection Used for emergency reconnects
+   * @param checkIfValid Used for emergency reconnects
+   *
+   * @return 0
+   * @return 1 if a previous connection was re-established
+   * @return -1 if a previous connection was NOT re-established
    */
-  void begin();
+  int8_t begin(getLastConnection getLastConnection, checkIfValid checkIfValid);
 
   /**
    * Attempt to pair with a receiver
@@ -100,6 +129,7 @@ public:
    * @return 0 if successful
    * @return #RC_ERROR_TIMEOUT if no receiver was found.
    * @return #RC_ERROR_LOST_CONNECTION if receiver stoped replying
+   * @return #RC_ERROR_ALREADY_CONNECTED if the remote is already connected.
    */
   int8_t pair(saveSettings saveSettings);
 
@@ -110,14 +140,16 @@ public:
    *
    * @param checkIfValid A function pointer to check if the found device has been paired, and to
    * load the settings
+   * @param setLastConnection setLastConnection()
    *
    * @return 0 if successful
    * @return #RC_ERROR_TIMEOUT if no receiver was found.
    * @return #RC_ERROR_LOST_CONNECTION if receiver stopped replying
    * @return #RC_ERROR_CONNECTION_REFUSED if the receiver is not on the pair list.
    * @return #RC_ERROR_BAD_DATA if the settings are not set properly on both devices
+   * @return #RC_ERROR_ALREADY_CONNECTED if the remote is already connected to a device.
    */
-  int8_t connect(checkIfValid checkIfValid);
+  int8_t connect(checkIfValid checkIfValid, setLastConnection setLastConnection);
 
   /**
    * Check if the transmitter is connected with a receiver.
@@ -136,7 +168,8 @@ public:
    * returns 1.
    *
    * @param channels array of size RCSettings.setNumChannels() to send
-   * @param telemetry array of size RCSettings.setPayloadSize() to receive
+   * @param telemetry optional array of size RCSettings.setPayloadSize() to receive
+   * data from the Receiver.
    *
    * @return >= 0 if successful
    * @return 1 if telemetry was received
@@ -145,7 +178,26 @@ public:
    * @return #RC_ERROR_NOT_CONNECTED if there is no device connected
    * @return #RC_ERROR_PACKET_NOT_SENT
    */
-  int8_t update(uint16_t channels[], uint8_t telemetry[]);
+  int8_t update(uint16_t channels[], uint8_t telemetry[] = NULL);
+
+  /**
+   * Disconnect From the currently conencted device
+   *
+   * @warning Once you disconnect, you can't reconnect until both devices
+   * call the connect() command.
+   *
+   * @return 0 if successful
+   * @return #RC_ERROR_NOT_CONNECTED
+   * @return #RC_ERROR_PACKET_NOT_SENT
+   */
+  int8_t disconnect(setLastConnection setLastConnection);
+
+  /**
+   * Get pointer for the current settings
+   *
+   * @return settings
+   */
+  RCSettings* getSettings();
 
 private:
 
@@ -172,8 +224,8 @@ private:
    * @return #RC_ERROR_PACKET_NOT_SENT
    * @return #RC_ERROR_NOT_CONNECTED
    */
-  int8_t send_packet(void* data, uint8_t dataSize, void* telemetry,
-                     uint8_t telemetrySize);
+  int8_t send_packet(void* data, uint8_t dataSize, void* telemetry = NULL,
+                     uint8_t telemetrySize = 0);
 
 };
 
