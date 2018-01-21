@@ -140,6 +140,7 @@ public:
    *
    * @param checkIfValid A function pointer to check if the found device has been paired, and to
    * load the settings
+   * @param setLastConnection setLastConnection()
    *
    * @return 0 if successful
    * @return #RC_ERROR_TIMEOUT if no receiver was found.

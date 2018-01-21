@@ -143,6 +143,7 @@ public:
    * when a standard packet is received.
    * @param telemetry RCSettings.setPayloadSize() size array of telemetry
    * data to send to the transmitter
+   * @param setConnected setConnected()
    *
    * @return 1 if channels were updated
    * @return 0 if nothing happened
