@@ -42,8 +42,6 @@ int8_t DeviceProtocol::begin(RCSettings* settings,
       return -1;
     }
 
-    flush_buffer();
-
     for(uint8_t i = 0; i < 5; i++) {
       _remoteId[i] = id[i];
     }
