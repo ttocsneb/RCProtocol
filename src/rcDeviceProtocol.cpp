@@ -258,6 +258,15 @@ int8_t DeviceProtocol::update(uint16_t channels[], uint8_t telemetry[]) {
       }
 
       _isConnected = false;
+
+      //If the packet is a Reconnect Packet
+    } else if(packet[0] == _PACKET_RECONNECT) {
+      if(!_settings.getEnableAck()) {
+        _radio->stopListening();
+        delay(20);
+        _radio->write(const_cast<uint8_t*>(&_ACK), 1);
+        _radio->startListening();
+      }
     }
 
     //Load a transmission.

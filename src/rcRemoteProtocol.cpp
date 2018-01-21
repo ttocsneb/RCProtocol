@@ -18,14 +18,82 @@ RemoteProtocol::RemoteProtocol(RF24* tranceiver, const uint8_t remoteId[]) {
   _remoteId = remoteId;
 }
 
-void RemoteProtocol::begin() {
+int8_t RemoteProtocol::begin(RemoteProtocol::getLastConnection getLastConnection, RemoteProtocol::checkIfValid checkIfValid) {
   _radio->begin();
-
   _radio->stopListening();
+
+  uint8_t lastId[5];
+  getLastConnection(lastId);
+
+  //check if the id is /0/0/0/0/0 (There was no interrupted connection)
+  bool isEmpty = true;
+  for(uint8_t i = 0; i < 5; i++) {
+    if(lastId[i] != 0) {
+      isEmpty = false;
+      break;
+    }
+  }
+
+  //If the last connection was unexpectedly cut-off, try re-establishing connection
+  if(!isEmpty) {
+    uint8_t settings[32];
+    
+    if(checkIfValid(lastId, settings)) {
+
+      //copy lastId to _deviceId
+      uint8_t i = 5;
+      while(i--) {
+        _deviceId[i] = lastId[i];
+      }
+
+      _settings.setSettings(settings);
+      apply_settings(&_settings);
+
+      _radio->openWritingPipe(_deviceId);
+      _radio->openReadingPipe(1, _remoteId);
+
+      if(!_settings.getEnableAck()) {
+        //Re-connect in noAck mode
+
+        _radio->write(const_cast<uint8_t*>(&_PACKET_RECONNECT), 1);
+
+        _radio->startListening();
+        if(wait_till_available(100) == -1) {
+          return -1;
+        }
+
+        uint8_t status;
+        _radio->read(&status, 1);
+
+        _radio->stopListening();
+
+        if(status == _ACK) {
+          _isConnected = true;
+          return 1;
+        }
+
+      } else {
+        if(force_send(const_cast<uint8_t*>(&_PACKET_RECONNECT), 1, 100) == 0) {
+          _isConnected = true;
+          return 1;
+        }
+      }
+    }
+
+    return -1;
+
+  }
+
+
+  return 0;
 
 }
 
 int8_t RemoteProtocol::pair(RemoteProtocol::saveSettings saveSettings) {
+  if(isConnected()) {
+    return RC_ERROR_ALREADY_CONNECTED;
+  }
+
   uint8_t settings[32];
   uint8_t deviceId[5];
 
@@ -74,6 +142,10 @@ int8_t RemoteProtocol::pair(RemoteProtocol::saveSettings saveSettings) {
 }
 
 int8_t RemoteProtocol::connect(RemoteProtocol::checkIfValid checkIfValid) {
+  if(isConnected()) {
+    return RC_ERROR_ALREADY_CONNECTED;
+  }
+
   uint8_t settings[32];
   uint8_t testData = 0;
   bool valid = false;

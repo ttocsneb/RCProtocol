@@ -70,6 +70,23 @@ public:
    * @return true if the check was successful
    */
   typedef bool (checkIfValid)(const uint8_t* id, uint8_t* settings);
+  /**
+   * Load the id of the last connected device.
+   * 
+   * This should load the id from setLastConnection() into id
+   * 
+   * @note This is used in begin(), so any classes used by this function 
+   * should be setup before begin() is called
+   * 
+   * @param id 5 byte array to put the loaded id in
+   */
+  typedef void (getLastConnection)(uint8_t* id);
+  /**
+   * Save the id of the current device to non-volitile memory.
+   * 
+   * @param id 5 byte array to save the id.
+   */
+  typedef void (setLastConnection)(const uint8_t* id);
 
   /**
    * Constructor
@@ -86,9 +103,21 @@ public:
   /**
    * Begin the Protocol
    *
-   * @note There is no need to begin the RF24 driver, as this function does this for you
+   * When begin is called, it will check if it was disconnected before 
+   * it last shutdown.  If it did not disconnect, It will try to reconnect.
+   * 
+   * 
+   * @note There is no need to begin the RF24 driver, as this function does 
+   * this for you
+   * 
+   * @param getLastConnection Used for emergency reconnects
+   * @param checkIfValid Used for emergency reconnects
+   * 
+   * @returns 0 if successful
+   * @returns 1 if a previous connection was re-established
+   * @returns -1 if a previous connection was NOT re-established
    */
-  void begin();
+  int8_t begin(getLastConnection getLastConnection, checkIfValid checkIfValid);
 
   /**
    * Attempt to pair with a receiver
@@ -100,6 +129,7 @@ public:
    * @return 0 if successful
    * @return #RC_ERROR_TIMEOUT if no receiver was found.
    * @return #RC_ERROR_LOST_CONNECTION if receiver stoped replying
+   * @return #RC_ERROR_ALREADY_CONNECTED if the remote is already connected.
    */
   int8_t pair(saveSettings saveSettings);
 
@@ -116,6 +146,7 @@ public:
    * @return #RC_ERROR_LOST_CONNECTION if receiver stopped replying
    * @return #RC_ERROR_CONNECTION_REFUSED if the receiver is not on the pair list.
    * @return #RC_ERROR_BAD_DATA if the settings are not set properly on both devices
+   * @return #RC_ERROR_ALREADY_CONNECTED if the remote is already connected to a device.
    */
   int8_t connect(checkIfValid checkIfValid);
 

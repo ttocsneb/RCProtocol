@@ -37,6 +37,10 @@
  * Transmitter is not connected, so the function could not operate properly
  */
 #define RC_ERROR_NOT_CONNECTED -21
+/**
+ * Transmitter is already connected, so the function should not be run.
+ */
+#define RC_ERROR_ALREADY_CONNECTED -22
 
 /**
  * Contains functions and variables used by both DeviceProtocal and
@@ -60,7 +64,8 @@ protected:
   const uint8_t _PACKET_CHANNELS = 0xA0;
   const uint8_t _PACKET_UPDATE_TRANS_SETTINGS = 0xB1;//TODO: Implement
   const uint8_t _PACKET_UPDATE_RECVR_SETTINGS = 0xB2;//TODO: Implement
-  const uint8_t _PACKET_DISCONNECT = 0xC0;//TODO: Implement
+  const uint8_t _PACKET_DISCONNECT = 0xC0;
+  const uint8_t _PACKET_RECONNECT = 0xCA;
 
   RCSettings _settings;
   RCSettings _pairSettings;
