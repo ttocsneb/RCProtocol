@@ -149,6 +149,8 @@ private:
   const uint8_t* _remoteId;
   uint8_t _deviceId[5];
 
+  RemoteInterface* _remoteFunctions;
+
   //update variables
   bool _isConnected;
   uint32_t _timer;

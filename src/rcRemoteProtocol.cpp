@@ -3,6 +3,7 @@
 
 #include "rcRemoteProtocol.h"
 #include "rcSettings.h"
+#include "rcRemoteInterface.h"
 
 RemoteProtocol::RemoteProtocol(RF24* tranceiver, const uint8_t remoteId[]) {
   //initialize all primitive variables
@@ -18,13 +19,15 @@ RemoteProtocol::RemoteProtocol(RF24* tranceiver, const uint8_t remoteId[]) {
   _remoteId = remoteId;
 }
 
-int8_t RemoteProtocol::begin(RemoteProtocol::getLastConnection
-                             getLastConnection, RemoteProtocol::checkIfValid checkIfValid) {
+int8_t RemoteProtocol::begin(RemoteInterface* functions) {
+
+  _remoteFunctions = functions;
+
   _radio->begin();
   _radio->stopListening();
 
   uint8_t lastId[5];
-  getLastConnection(lastId);
+  _remoteFunctions->getLastConnection(lastId);
 
   //check if the id is _DISCONNECT
   bool isEmpty = true;
@@ -39,7 +42,7 @@ int8_t RemoteProtocol::begin(RemoteProtocol::getLastConnection
   if(!isEmpty) {
     uint8_t settings[32];
 
-    if(checkIfValid(lastId, settings)) {
+    if(_remoteFunctions->checkIfValid(lastId, settings)) {
 
       //copy lastId to _deviceId
       for(uint8_t i = 0; i < 5; i++) {
@@ -59,6 +62,7 @@ int8_t RemoteProtocol::begin(RemoteProtocol::getLastConnection
 
         _radio->startListening();
         if(wait_till_available(100) == -1) {
+          _remoteFunctions->setLastConnection(_DISCONNECT);
           return -1;
         }
 
@@ -71,7 +75,6 @@ int8_t RemoteProtocol::begin(RemoteProtocol::getLastConnection
           _isConnected = true;
           return 1;
         }
-
       } else {
         if(force_send(const_cast<uint8_t*>(&_PACKET_RECONNECT), 1, 100) == 0) {
           _isConnected = true;
@@ -80,16 +83,15 @@ int8_t RemoteProtocol::begin(RemoteProtocol::getLastConnection
       }
     }
 
-    return -1;
+    _remoteFunctions->setLastConnection(_DISCONNECT);
 
+    return -1;
   }
 
-
   return 0;
-
 }
 
-int8_t RemoteProtocol::pair(RemoteProtocol::saveSettings saveSettings) {
+int8_t RemoteProtocol::pair() {
   if(isConnected()) {
     return RC_ERROR_ALREADY_CONNECTED;
   }
@@ -134,15 +136,14 @@ int8_t RemoteProtocol::pair(RemoteProtocol::saveSettings saveSettings) {
   _radio->read(settings, 32);
 
   //Save settings
-  saveSettings(deviceId, settings);
+  _remoteFunctions->saveSettings(deviceId, settings);
 
   _radio->stopListening();
 
   return 0;
 }
 
-int8_t RemoteProtocol::connect(RemoteProtocol::checkIfValid checkIfValid,
-                               RemoteProtocol::setLastConnection setLastConnection) {
+int8_t RemoteProtocol::connect() {
   if(isConnected()) {
     return RC_ERROR_ALREADY_CONNECTED;
   }
@@ -174,7 +175,7 @@ int8_t RemoteProtocol::connect(RemoteProtocol::checkIfValid checkIfValid,
   _radio->read(&_deviceId, 5);
 
   //Check if we can pair with the device
-  valid = checkIfValid(_deviceId, settings);
+  valid = _remoteFunctions->checkIfValid(_deviceId, settings);
   _settings.setSettings(settings);
 
   //Start Writing
@@ -250,7 +251,7 @@ int8_t RemoteProtocol::connect(RemoteProtocol::checkIfValid checkIfValid,
     _radio->stopListening();
   }
 
-  setLastConnection(_deviceId);
+  _remoteFunctions->setLastConnection(_deviceId);
 
   //We passed all of the tests, so we are connected.
   _isConnected = true;
@@ -333,8 +334,7 @@ int8_t RemoteProtocol::update(uint16_t channels[], uint8_t telemetry[]) {
   return status;
 }
 
-int8_t RemoteProtocol::disconnect(RemoteProtocol::setLastConnection
-                                  setLastConnection) {
+int8_t RemoteProtocol::disconnect() {
   int8_t status = send_packet((const_cast<uint8_t*>(&_PACKET_DISCONNECT)), 1);
 
   if(status >= 0) {
@@ -356,7 +356,7 @@ int8_t RemoteProtocol::disconnect(RemoteProtocol::setLastConnection
 
     _isConnected = false;
 
-    setLastConnection(_DISCONNECT);
+    _remoteFunctions->setLastConnection(_DISCONNECT);
   }
 
   return status;

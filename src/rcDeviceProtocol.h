@@ -10,7 +10,7 @@
 
 #include "rcSettings.h"
 #include "rcGlobal.h"
-#include "rcDeviceProtocol.h"
+#include "rcDeviceInterface.h"
 
 #ifndef __RF24_H__
 #error "rcDeviceProtocol Requires the tmrh20 RF24 Library: https://github.com/nRF24/RF24"
