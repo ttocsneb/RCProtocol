@@ -3,6 +3,10 @@
 
 #include <RF24.h>
 
+#define RC_TELEM_BATTERY     0b00000001
+#define RC_TELEM_CURRENT     0b00000010
+#define RC_TELEM_TEMPERATURE 0b00000100
+
 class RCSettings {
 public:
   /**
@@ -51,7 +55,7 @@ public:
    *
    * @return enable dynamic payload
    */
-  bool getEnableDynamicPayload();
+  bool getEnableDynamicPayload() const;
 
   /**
    * Enable/Disable Acknowledgements
@@ -74,7 +78,7 @@ public:
    *
    * @return enable acknowledgements
    */
-  bool getEnableAck();
+  bool getEnableAck() const;
 
   /**
    * Enable/Disable Custom Ack Paylaods
@@ -102,7 +106,7 @@ public:
    *
    * @return enable ack payloads
    */
-  bool getEnableAckPayload();
+  bool getEnableAckPayload() const;
 
   /**
    * DataRate
@@ -126,7 +130,7 @@ public:
    *
    * @return datarate
    */
-  rf24_datarate_e getDataRate();
+  rf24_datarate_e getDataRate() const;
 
   /**
    * Starting radio Channel.
@@ -146,7 +150,7 @@ public:
    *
    * @return channel
    */
-  uint8_t getStartChannel();
+  uint8_t getStartChannel() const;
 
   /**
    * Payload Size
@@ -169,7 +173,7 @@ public:
    *
    * @return payload
    */
-  uint8_t getPayloadSize();
+  uint8_t getPayloadSize() const;
 
   /**
    * Communication Frequency
@@ -191,7 +195,7 @@ public:
    *
    * @return frequency
    */
-  uint8_t getCommsFrequency();
+  uint8_t getCommsFrequency() const;
 
   /**
    * Retry Delay
@@ -222,7 +226,7 @@ public:
    *
    * @return retryDelay
    */
-  uint8_t getRetryDelay();
+  uint8_t getRetryDelay() const;
 
   /**
    * Number of channels in a packet
@@ -245,12 +249,32 @@ public:
    *
    * @return numChannels
    */
-  uint8_t getNumChannels();
+  uint8_t getNumChannels() const;
+
+  /**
+   * Set the telemetry bits to enable certain telemetry channels
+   *
+   * Use RC_TELEM_x | RC_TELEM_b to enable specific telemetry channels
+   *
+   * Uses byte 6
+   *
+   * Default: 0
+   *
+   * @param telemetryChannels
+   *
+   */
+  void setTelemetryChannels(uint8_t telemetryChannels);
+  /**
+   * Get the value from setTelemetryChannels()
+   *
+   * @return telemetryChannels
+   */
+  uint8_t getTelemetryChannels() const;
 
   /**
    * Print the settings to Serial.
    */
-  void printSettings();
+  void printSettings() const;
 
 private:
   uint8_t _settings[32];

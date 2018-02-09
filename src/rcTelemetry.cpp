@@ -3,7 +3,6 @@
 RCTelemetry::RCTelemetry(const RCSettings* settings) {
   _settings = settings;
 
-  //TODO make _telemetry dynamically allocated based on settings.
   _size = calculate_size(_settings);
   _telemetry = new uint8_t[_size];
 
@@ -14,6 +13,10 @@ RCTelemetry::RCTelemetry(const RCSettings* settings,
                          uint8_t* telemetry) : RCTelemetry(settings) {
 
   loadTelemetry(telemetry);
+}
+
+RCTelemetry::~RCTelemetry() {
+  delete[] _telemetry;
 }
 
 void RCTelemetry::loadTelemetry(uint8_t* telemetry) {
@@ -27,54 +30,99 @@ uint8_t* RCTelemetry::getTelemetry() const {
 }
 
 void RCTelemetry::setBattery(float battery) {
-  if(_batteryLoc) {
+  if(isBatteryEnabled()) {
     write_small_float(battery, _batteryLoc);
   }
 }
 
 float RCTelemetry::getBattery() const {
-  if(_batteryLoc) {
+  if(isBatteryEnabled()) {
     return get_small_float(_batteryLoc);
   }
   return 0;
 }
 
+bool RCTelemetry::isBatteryEnabled() const {
+  return _batteryLoc;
+}
+
 void RCTelemetry::setCurrent(float current) {
-  if(_currentLoc) {
+  if(isCurrentEnabled()) {
     write_float(current, _currentLoc);
   }
 }
 
 float RCTelemetry::getCurrent() const {
-  if(_currentLoc) {
+  if(isCurrentEnabled()) {
     return get_float(_currentLoc);
   }
   return 0;
 }
 
+bool RCTelemetry::isCurrentEnabled() const {
+  return _currentLoc;
+}
+
 void RCTelemetry::setTemperature(int8_t temperature) {
-  if(_tempLoc) {
+  if(isTemperatureEnabled()) {
     *_tempLoc = temperature;
   }
 }
 
 int8_t RCTelemetry::getTemperature() const {
-  if(_tempLoc) {
+  if(isTemperatureEnabled()) {
     return *_tempLoc;
   }
   return 0;
 }
 
+bool RCTelemetry::isTemperatureEnabled() const {
+  return _tempLoc;
+}
+
 void RCTelemetry::load_pointers() {
-  //TODO load telemetry pointers
-  _batteryLoc = NULL;
-  _currentLoc = NULL;
-  _tempLoc = NULL;
+
+  uint8_t bits = _settings->getTelemetryChannels();
+  uint8_t i = 0;
+
+  if(bits & RC_TELEM_BATTERY) {
+    _batteryLoc = _telemetry + i;
+    i += BATTERY_SIZE;
+  } else {
+    _batteryLoc = NULL;
+  }
+
+  if(bits & RC_TELEM_CURRENT) {
+    _currentLoc = _telemetry + i;
+    i += CURRENT_SIZE;
+  } else {
+    _currentLoc = NULL;
+  }
+
+  if(bits & RC_TELEM_TEMPERATURE) {
+    _tempLoc = _telemetry + i;
+    i += TEMPERATURE_SIZE;
+  } else {
+    _tempLoc = NULL;
+  }
 }
 
 uint8_t RCTelemetry::calculate_size(const RCSettings* settings) {
   //TODO actually calculate size;
-  return 32;
+  uint8_t i = 0;
+  uint8_t bits = settings->getTelemetryChannels();
+
+  if(bits & RC_TELEM_BATTERY) {
+    i += BATTERY_SIZE;
+  }
+  if(bits & RC_TELEM_CURRENT) {
+    i += CURRENT_SIZE;
+  }
+  if(bits & RC_TELEM_TEMPERATURE) {
+    i += TEMPERATURE_SIZE;
+  }
+
+  return i;
 }
 
 void RCTelemetry::write_float(float number, uint8_t* location) {

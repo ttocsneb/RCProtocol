@@ -12,6 +12,7 @@ RCSettings::RCSettings() {
   setCommsFrequency(60);
   setRetryDelay(15);
   setNumChannels(6);
+  setTelemetryChannels(0);
 }
 
 void RCSettings::setSettings(const uint8_t* settings) {
@@ -30,7 +31,7 @@ void RCSettings::setEnableDynamicPayload(bool enable) {
   _settings[0] = (enable ? (_settings[0] | 1) : (_settings[0] & (~1)));
 }
 
-bool RCSettings::getEnableDynamicPayload() {
+bool RCSettings::getEnableDynamicPayload() const {
   return _settings[0] & 1;
 }
 
@@ -40,7 +41,7 @@ void RCSettings::setEnableAck(bool enable) {
   _settings[0] = (enable ? (_settings[0] | 2) : (_settings[0] & (~2)));
 }
 
-bool RCSettings::getEnableAck() {
+bool RCSettings::getEnableAck() const {
   return (_settings[0] >> 1) & 1;
 }
 
@@ -50,7 +51,7 @@ void RCSettings::setEnableAckPayload(bool enable) {
   _settings[0] = (enable ? (_settings[0] | 4) : (_settings[0] & (~4)));
 }
 
-bool RCSettings::getEnableAckPayload() {
+bool RCSettings::getEnableAckPayload() const {
   return (_settings[0] >> 2) & 1;
 }
 
@@ -60,7 +61,7 @@ void RCSettings::setDataRate(rf24_datarate_e datarate) {
   _settings[0] = (_settings[0] & (~24)) | (datarate << 3);
 }
 
-rf24_datarate_e RCSettings::getDataRate() {
+rf24_datarate_e RCSettings::getDataRate() const {
   uint8_t datarate = (_settings[0] >> 3) & 3;
   switch(datarate) {
   case RF24_2MBPS:
@@ -77,7 +78,7 @@ void RCSettings::setStartChannel(uint8_t channel) {
   _settings[1] = channel;
 }
 
-uint8_t RCSettings::getStartChannel() {
+uint8_t RCSettings::getStartChannel() const {
   return _settings[1];
 }
 
@@ -85,7 +86,7 @@ void RCSettings::setPayloadSize(uint8_t payload)  {
   _settings[2] = min(payload, 32);
 }
 
-uint8_t RCSettings::getPayloadSize() {
+uint8_t RCSettings::getPayloadSize() const {
   return _settings[2];
 }
 
@@ -93,7 +94,7 @@ void RCSettings::setCommsFrequency(uint8_t frequency) {
   _settings[3] = frequency;
 }
 
-uint8_t RCSettings::getCommsFrequency() {
+uint8_t RCSettings::getCommsFrequency() const {
   return _settings[3];
 }
 
@@ -103,7 +104,7 @@ void RCSettings::setRetryDelay(uint8_t time) {
   _settings[4] = (_settings[4] & (~15)) | (time & 15);
 }
 
-uint8_t RCSettings::getRetryDelay() {
+uint8_t RCSettings::getRetryDelay() const {
   return _settings[4] & 15;
 }
 
@@ -111,11 +112,19 @@ void RCSettings::setNumChannels(uint8_t numChannels) {
   _settings[5] = numChannels;
 }
 
-uint8_t RCSettings::getNumChannels() {
+uint8_t RCSettings::getNumChannels() const {
   return _settings[5];
 }
 
-void RCSettings::printSettings() {
+void RCSettings::setTelemetryChannels(uint8_t telemetryChannels) {
+  _settings[6] = telemetryChannels;
+}
+
+uint8_t RCSettings::getTelemetryChannels() const {
+  return _settings[6];
+}
+
+void RCSettings::printSettings() const {
   Serial.print("Dyn Load: ");
   Serial.println(getEnableDynamicPayload() ? "True" : "False");
 
