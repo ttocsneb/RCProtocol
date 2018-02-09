@@ -2,6 +2,7 @@
 
 #include "rcDeviceProtocol.h"
 #include "rcSettings.h"
+#include "rcDeviceInterface.h"
 
 DeviceProtocol::DeviceProtocol(RF24* tranceiver, const uint8_t deviceId[]) {
   _isConnected = false;
@@ -15,20 +16,20 @@ DeviceProtocol::DeviceProtocol(RF24* tranceiver, const uint8_t deviceId[]) {
 
 }
 
-int8_t DeviceProtocol::begin(RCSettings* settings,
-                             DeviceProtocol::checkConnected checkConnected,
-                             DeviceProtocol::loadRemoteID loadRemoteID) {
+int8_t DeviceProtocol::begin(RCSettings* settings, DeviceInterface* functions) {
   _settings.setSettings(settings->getSettings());
+
+  _deviceFunctions = functions;
 
   _radio->begin();
 
   //If there was a previous connection, try to re-establish it.
-  if(checkConnected()) {
+  if(_deviceFunctions->checkConnected()) {
     apply_settings(&_settings);
 
     //Load the Remote ID.
     uint8_t id[5];
-    loadRemoteID(id);
+    _deviceFunctions->loadRemoteID(id);
 
     _radio->openWritingPipe(id);
     _radio->openReadingPipe(1, _deviceId);
@@ -39,6 +40,7 @@ int8_t DeviceProtocol::begin(RCSettings* settings,
     _settings.getCommsFrequency() per second, so we will wait for 3 time
     periods before giving up.*/
     if(wait_till_available(round(3000.0 / _settings.getCommsFrequency())) == -1) {
+      _deviceFunctions->setConnected(false);
       return -1;
     }
 
@@ -47,15 +49,12 @@ int8_t DeviceProtocol::begin(RCSettings* settings,
     }
     _isConnected = true;
 
-
     return 1;
-
   }
-
   return 0;
 }
 
-int8_t DeviceProtocol::pair(DeviceProtocol::saveRemoteID saveRemoteID) {
+int8_t DeviceProtocol::pair() {
   if(isConnected()) {
     return RC_ERROR_ALREADY_CONNECTED;
   }
@@ -86,7 +85,7 @@ int8_t DeviceProtocol::pair(DeviceProtocol::saveRemoteID saveRemoteID) {
   _radio->read(&radioId, 5);
 
   //write to the remote the device id
-  saveRemoteID(radioId);
+  _deviceFunctions->saveRemoteID(radioId);
 
   _radio->stopListening();
 
@@ -113,8 +112,7 @@ int8_t DeviceProtocol::pair(DeviceProtocol::saveRemoteID saveRemoteID) {
   return 0;
 }
 
-int8_t DeviceProtocol::connect(DeviceProtocol::loadRemoteID loadRemoteID,
-                               DeviceProtocol::setConnected setConnected) {
+int8_t DeviceProtocol::connect() {
   if(isConnected()) {
     return RC_ERROR_ALREADY_CONNECTED;
   }
@@ -123,7 +121,7 @@ int8_t DeviceProtocol::connect(DeviceProtocol::loadRemoteID loadRemoteID,
   uint8_t test = 0;
 
   uint8_t remoteId[5];
-  loadRemoteID(remoteId);
+  _deviceFunctions->loadRemoteID(remoteId);
 
   //reset connected because if we fail connecting, we will not be connected
   //to anything.
@@ -225,7 +223,7 @@ int8_t DeviceProtocol::connect(DeviceProtocol::loadRemoteID loadRemoteID,
 
   //We passed all of the tests, so we are connected.
   _isConnected = true;
-  setConnected(true);
+  _deviceFunctions->setConnected(true);
 
   for(uint8_t i = 0; i < 5; i++) {
     _remoteId[i] = remoteId[i];
@@ -264,8 +262,7 @@ int8_t DeviceProtocol::check_packet(void* returnData, uint8_t dataSize) {
   return check_packet(returnData, dataSize, NULL, 0);
 }
 
-int8_t DeviceProtocol::update(uint16_t channels[], uint8_t telemetry[],
-                              DeviceProtocol::setConnected setConnected) {
+int8_t DeviceProtocol::update(uint16_t channels[], uint8_t telemetry[]) {
   if(!isConnected()) {
     return RC_ERROR_NOT_CONNECTED;
   }
@@ -305,7 +302,7 @@ int8_t DeviceProtocol::update(uint16_t channels[], uint8_t telemetry[],
       }
 
       _isConnected = false;
-      setConnected(false);
+      _deviceFunctions->setConnected(false);
 
       //If the packet is a Reconnect Packet
     } else if(packet[0] == _PACKET_RECONNECT) {

@@ -10,6 +10,7 @@
 
 #include "rcSettings.h"
 #include "rcGlobal.h"
+#include "rcRemoteInterface.h"
 
 #ifndef __RF24_H__
 #error "rcRemoteProtocol Requires the tmrh20 RF24 Library: https://github.com/nRF24/RF24"
@@ -38,55 +39,6 @@
  */
 class RemoteProtocol : RCGlobal {
 public:
-  /**
-   * Save settings to non-volitile memory, such as EEPROM
-   *
-   * The function should save both the id, and settings to some form of non-volitile memory.
-   * This can be done in any way as long as the data can be retrieved, and checked.
-   *
-   * @param id 5 byte char array containing the ID of the receiver
-   * @param settings 32 byte array of settings
-   */
-  typedef void (saveSettings)(const uint8_t* id, const uint8_t* settings);
-  /**
-   * Check if the given id has been paired, and load the corresponding settings into the
-   * settings array.
-   *
-   * If the id is not found, the settings should not be changed, and return false.
-   *
-   * Here is a heavily simplified example:
-   * @code
-   * if(findID(id) == true) {
-   *   loadSettings(settings);
-   *   return true;
-   * } else {
-   *   return false;
-   * }
-   * @endcode
-   *
-   * @param id 5 byte char array containing the ID of the receiver
-   * @param settings 32 byte array to be loaded with the settings of the ID
-   *
-   * @return true if the check was successful
-   */
-  typedef bool (checkIfValid)(const uint8_t* id, uint8_t* settings);
-  /**
-   * Load the id of the last connected device.
-   *
-   * This should load the id from setLastConnection() into id
-   *
-   * @note This is used in begin(), so any classes used by this function
-   * should be setup before begin() is called
-   *
-   * @param id 5 byte array to put the loaded id in
-   */
-  typedef void (getLastConnection)(uint8_t* id);
-  /**
-   * Save the id of the current device to non-volitile memory.
-   *
-   * @param id 5 byte array to save the id.
-   */
-  typedef void (setLastConnection)(const uint8_t* id);
 
   /**
    * Constructor
@@ -110,37 +62,30 @@ public:
    * @note There is no need to begin the RF24 driver, as this function does
    * this for you
    *
-   * @param getLastConnection Used for emergency reconnects
-   * @param checkIfValid Used for emergency reconnects
+   * @param functions Userdefined functions from #RemoteInterface
    *
    * @return 0
    * @return 1 if a previous connection was re-established
    * @return -1 if a previous connection was NOT re-established
    */
-  int8_t begin(getLastConnection getLastConnection, checkIfValid checkIfValid);
+  int8_t begin(RemoteInterface* functions);
 
   /**
    * Attempt to pair with a receiver
    *
    * @note The receiver you are trying to pair with should also be in pair mode
    *
-   * @param saveSettings A function pointer to save the settings of the paired device.
-   *
    * @return 0 if successful
    * @return #RC_ERROR_TIMEOUT if no receiver was found.
    * @return #RC_ERROR_LOST_CONNECTION if receiver stoped replying
    * @return #RC_ERROR_ALREADY_CONNECTED if the remote is already connected.
    */
-  int8_t pair(saveSettings saveSettings);
+  int8_t pair();
 
   /**
    * Attempt to connect with a previously paired device
    *
    * @note The receiver should have already been paired with the remote, and in connect mode
-   *
-   * @param checkIfValid A function pointer to check if the found device has been paired, and to
-   * load the settings
-   * @param setLastConnection setLastConnection()
    *
    * @return 0 if successful
    * @return #RC_ERROR_TIMEOUT if no receiver was found.
@@ -149,7 +94,7 @@ public:
    * @return #RC_ERROR_BAD_DATA if the settings are not set properly on both devices
    * @return #RC_ERROR_ALREADY_CONNECTED if the remote is already connected to a device.
    */
-  int8_t connect(checkIfValid checkIfValid, setLastConnection setLastConnection);
+  int8_t connect();
 
   /**
    * Check if the transmitter is connected with a receiver.
@@ -190,7 +135,7 @@ public:
    * @return #RC_ERROR_NOT_CONNECTED
    * @return #RC_ERROR_PACKET_NOT_SENT
    */
-  int8_t disconnect(setLastConnection setLastConnection);
+  int8_t disconnect();
 
   /**
    * Get pointer for the current settings
@@ -203,6 +148,8 @@ private:
 
   const uint8_t* _remoteId;
   uint8_t _deviceId[5];
+
+  RemoteInterface* _remoteFunctions;
 
   //update variables
   bool _isConnected;
