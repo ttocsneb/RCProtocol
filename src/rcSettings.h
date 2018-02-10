@@ -6,6 +6,11 @@
 #define RC_TELEM_BATTERY     0b00000001
 #define RC_TELEM_CURRENT     0b00000010
 #define RC_TELEM_TEMPERATURE 0b00000100
+#define RC_TELEM_RPM         0b00001000
+#define RC_TELEM_GPS         0b00010000
+#define RC_TELEM_ALARM1      0b00100000 //One Alarm
+#define RC_TELEM_ALARM2      0b01000000 //Two Alarms
+#define RC_TELEM_ALARM3      0b01100000 //Three Alarms
 
 class RCSettings {
 public:

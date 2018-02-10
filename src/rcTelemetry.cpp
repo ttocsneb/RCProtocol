@@ -74,10 +74,78 @@ bool RCTelemetry::isTemperatureEnabled() const {
   return _tempLoc;
 }
 
+void RCTelemetry::setRPM(int16_t rpm) {
+  if(isRPMEnabled()) {
+    *_rpmLoc = (rpm >> 8) & 255;
+    *(_rpmLoc + 1) = rpm & 255;
+  }
+}
+
+int16_t RCTelemetry::getRPM() const {
+  if(isRPMEnabled()) {
+    return (static_cast<int16_t>(*_rpmLoc) << 8) | (*(_rpmLoc + 1));
+  } else {
+    return 0;
+  }
+}
+
+bool RCTelemetry::isRPMEnabled() const {
+  return _rpmLoc;
+}
+
+void RCTelemetry::setGPS(float x, float y, float z) {
+  if(isGPSEnabled()) {
+    write_float(x, _gpsLoc);
+    write_float(y, _gpsLoc + FLOAT_SIZE);
+    write_float(z, _gpsLoc + (FLOAT_SIZE * 2));
+  }
+}
+
+void RCTelemetry::getGPS(float &x, float &y, float &z) const {
+  if(isGPSEnabled()) {
+    x = get_float(_gpsLoc);
+    y = get_float(_gpsLoc + FLOAT_SIZE);
+    z = get_float(_gpsLoc + (FLOAT_SIZE * 2));
+  } else {
+    x = 0;
+    y = 0;
+    z = 0;
+  }
+}
+
+bool RCTelemetry::isGPSEnabled() const {
+  return _gpsLoc;
+}
+
+void RCTelemetry::setAlarm(uint8_t alarmNumber, bool value) {
+  if(numAlarmsEnabled() > alarmNumber) {
+    if(value) {
+      *_alarmLoc = (*_alarmLoc) | (1 << (alarmNumber + _alarmBin));
+    } else {
+      *_alarmLoc = (*_alarmLoc) & ~(1 << (alarmNumber + _alarmBin));
+    }
+  }
+}
+
+bool RCTelemetry::getAlarm(uint8_t alarmNumber) const {
+  if(numAlarmsEnabled() > alarmNumber) {
+    return (*_alarmLoc) & (1 << (alarmNumber + _alarmBin)) ;
+  } else {
+    return false;
+  }
+}
+
+uint8_t RCTelemetry::numAlarmsEnabled() const {
+  return _alarmLoc ? _alarmNum : 0;
+}
+
 void RCTelemetry::load_pointers() {
   uint8_t bits = _settings->getTelemetryChannels();
   uint8_t i = 0;
+  uint8_t binChannel = 0;
+  uint8_t binI = 8;
 
+  //Battery channel
   if(bits & RC_TELEM_BATTERY) {
     _batteryLoc = _telemetry + i;
     i += BATTERY_SIZE;
@@ -85,6 +153,7 @@ void RCTelemetry::load_pointers() {
     _batteryLoc = NULL;
   }
 
+  //Current Channel
   if(bits & RC_TELEM_CURRENT) {
     _currentLoc = _telemetry + i;
     i += CURRENT_SIZE;
@@ -92,27 +161,104 @@ void RCTelemetry::load_pointers() {
     _currentLoc = NULL;
   }
 
+  //Temperature Channel
   if(bits & RC_TELEM_TEMPERATURE) {
     _tempLoc = _telemetry + i;
     i += TEMPERATURE_SIZE;
   } else {
     _tempLoc = NULL;
   }
+
+  //RPM Channel
+  if(bits & RC_TELEM_RPM) {
+    _rpmLoc = _telemetry + i;
+    i += RPM_SIZE;
+  } else {
+    _rpmLoc = NULL;
+  }
+
+  //GPS Channel
+  if(bits & RC_TELEM_GPS) {
+    _gpsLoc = _telemetry + i;
+    i += GPS_SIZE;
+  } else {
+    _gpsLoc = NULL;
+  }
+
+  //Alarm Channels
+  //If any of the alarms ar enabled.
+  if(bits & RC_TELEM_ALARM3) {
+    //Determin the number of alarms
+    if((bits & RC_TELEM_ALARM3) == RC_TELEM_ALARM3) {
+      _alarmNum = 3;
+    } else if(bits & RC_TELEM_ALARM1) {
+      _alarmNum = 1;
+    } else {
+      _alarmNum = 2;
+    }
+
+    //If the current binary channel is full, make a new one.
+    if(binI >= 8 - (ALARM_BIT_SIZE * _alarmNum)) {
+      binI = 0;
+      binChannel = i;
+      i++;
+    }
+
+    //Set the location for the alarm byte and its bits.
+    _alarmLoc = _telemetry + binChannel;
+    _alarmBin = binI;
+    binI += ALARM_BIT_SIZE * _alarmNum;
+  } else {
+    _alarmLoc = NULL;
+    _alarmNum = 0;
+  }
 }
 
 uint8_t RCTelemetry::calculate_size(const RCSettings* settings) {
   uint8_t i = 0;
+  uint8_t binI = 8;
 
   uint8_t bits = settings->getTelemetryChannels();
 
+  //Battery
   if(bits & RC_TELEM_BATTERY) {
     i += BATTERY_SIZE;
   }
+  //Current
   if(bits & RC_TELEM_CURRENT) {
     i += CURRENT_SIZE;
   }
+  //Temperature
   if(bits & RC_TELEM_TEMPERATURE) {
     i += TEMPERATURE_SIZE;
+  }
+  //RPM
+  if(bits & RC_TELEM_RPM) {
+    i += RPM_SIZE;
+  }
+  //GPS
+  if(bits & RC_TELEM_GPS) {
+    i += GPS_SIZE;
+  }
+  //Alarms
+  if(bits & RC_TELEM_ALARM3) {
+    uint8_t alarmsize;
+    //Determin the number of alarms
+    if((bits & RC_TELEM_ALARM3) == RC_TELEM_ALARM3) {
+      alarmsize = 3;
+    } else if(bits & RC_TELEM_ALARM1) {
+      alarmsize = 1;
+    } else {
+      alarmsize = 2;
+    }
+
+    //If the current binary channel is full, make a new one.
+    if(binI >= 8 - (ALARM_BIT_SIZE * alarmsize)) {
+      binI = 0;
+      i++;
+    }
+
+    binI += ALARM_BIT_SIZE * alarmsize;
   }
 
   return i;
