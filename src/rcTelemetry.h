@@ -18,17 +18,6 @@ public:
   RCTelemetry(const RCSettings* settings);
 
   /**
-   * Create a new RCTelemetry object populated with telemetry
-   *
-   * An RCSettings object is required to allocate the proper amount of memory
-   * for the telemetry.  It uses RCSettings.getTelemetryChannels()
-   *
-   * @param settings
-   * @param telemetry
-   */
-  RCTelemetry(const RCSettings* settings, uint8_t* telemetry);
-
-  /**
    * Destroy the RCTelemetry object.
    *
    * This deletes the allocated memory for

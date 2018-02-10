@@ -11,6 +11,7 @@
 #include "rcSettings.h"
 #include "rcGlobal.h"
 #include "rcDeviceInterface.h"
+#include "rcTelemetry.h"
 
 #ifndef __RF24_H__
 #error "rcDeviceProtocol Requires the tmrh20 RF24 Library: https://github.com/nRF24/RF24"
@@ -100,14 +101,13 @@ public:
    *
    * @param channels RCSettings.setNumChannels() size array that is set
    * when a standard packet is received.
-   * @param telemetry RCSettings.setPayloadSize() size array of telemetry
-   * data to send to the transmitter
+   * @param telemetry
    *
    * @return 1 if channels were updated
    * @return 0 if nothing happened
    * @return #RC_ERROR_NOT_CONNECTED if not connected
    */
-  int8_t update(uint16_t channels[], uint8_t telemetry[]);
+  int8_t update(uint16_t channels[], RCTelemetry* telemetry);
 
   /**
    * Get pointer for the current settings

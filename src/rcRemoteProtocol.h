@@ -11,6 +11,7 @@
 #include "rcSettings.h"
 #include "rcGlobal.h"
 #include "rcRemoteInterface.h"
+#include "rcTelemetry.h"
 
 #ifndef __RF24_H__
 #error "rcRemoteProtocol Requires the tmrh20 RF24 Library: https://github.com/nRF24/RF24"
@@ -113,8 +114,7 @@ public:
    * returns 1.
    *
    * @param channels array of size RCSettings.setNumChannels() to send
-   * @param telemetry optional array of size RCSettings.setPayloadSize() to receive
-   * data from the Receiver.
+   * @param telemetry optional
    *
    * @return >= 0 if successful
    * @return 1 if telemetry was received
@@ -123,7 +123,7 @@ public:
    * @return #RC_ERROR_NOT_CONNECTED if there is no device connected
    * @return #RC_ERROR_PACKET_NOT_SENT
    */
-  int8_t update(uint16_t channels[], uint8_t telemetry[] = NULL);
+  int8_t update(uint16_t channels[], RCTelemetry* telemetry = NULL);
 
   /**
    * Disconnect From the currently conencted device

@@ -290,7 +290,7 @@ int8_t RemoteProtocol::send_packet(void* data, uint8_t dataSize,
   }
 }
 
-int8_t RemoteProtocol::update(uint16_t channels[], uint8_t telemetry[]) {
+int8_t RemoteProtocol::update(uint16_t channels[], RCTelemetry* telemetry) {
 
   if(!isConnected()) {
     return RC_ERROR_NOT_CONNECTED;
@@ -317,7 +317,7 @@ int8_t RemoteProtocol::update(uint16_t channels[], uint8_t telemetry[]) {
   //Send the packet.
   int8_t status = send_packet(packet,
                               sizeof(uint8_t) * _settings.getPayloadSize(),
-                              telemetry, sizeof(uint8_t) * _settings.getPayloadSize());
+                              telemetry->getTelemetry(), telemetry->getTelemetrySize());
 
 
   //If the tick was too long, and there are no errors, set the return to Tick To Short

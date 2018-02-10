@@ -262,7 +262,7 @@ int8_t DeviceProtocol::check_packet(void* returnData, uint8_t dataSize) {
   return check_packet(returnData, dataSize, NULL, 0);
 }
 
-int8_t DeviceProtocol::update(uint16_t channels[], uint8_t telemetry[]) {
+int8_t DeviceProtocol::update(uint16_t channels[], RCTelemetry* telemetry) {
   if(!isConnected()) {
     return RC_ERROR_NOT_CONNECTED;
   }
@@ -275,7 +275,7 @@ int8_t DeviceProtocol::update(uint16_t channels[], uint8_t telemetry[]) {
   //Load a transmission, and send an ack payload.
   packetStatus = check_packet(packet,
                               _settings.getPayloadSize() * sizeof(uint8_t),
-                              telemetry, _settings.getPayloadSize());
+                              telemetry->getTelemetry(), telemetry->getTelemetrySize());
 
 
   //read through each transmission we have gotten since the last update

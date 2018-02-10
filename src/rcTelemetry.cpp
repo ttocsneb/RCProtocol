@@ -9,12 +9,6 @@ RCTelemetry::RCTelemetry(const RCSettings* settings) {
   load_pointers();
 }
 
-RCTelemetry::RCTelemetry(const RCSettings* settings,
-                         uint8_t* telemetry) : RCTelemetry(settings) {
-
-  loadTelemetry(telemetry);
-}
-
 RCTelemetry::~RCTelemetry() {
   delete[] _telemetry;
 }
@@ -81,7 +75,6 @@ bool RCTelemetry::isTemperatureEnabled() const {
 }
 
 void RCTelemetry::load_pointers() {
-
   uint8_t bits = _settings->getTelemetryChannels();
   uint8_t i = 0;
 
@@ -108,8 +101,8 @@ void RCTelemetry::load_pointers() {
 }
 
 uint8_t RCTelemetry::calculate_size(const RCSettings* settings) {
-  //TODO actually calculate size;
   uint8_t i = 0;
+
   uint8_t bits = settings->getTelemetryChannels();
 
   if(bits & RC_TELEM_BATTERY) {
